@@ -64,20 +64,15 @@ private fun SearchSourceCard(source: SearchSource) {
             .width(300.dp)
             .height(140.dp)
             .clip(RoundedCornerShape(20.dp))
-            .clickable { uriHandler.openUri(source.url) }
-            .graphicsLayer {
-                shadowElevation = 8f
-                shape = RoundedCornerShape(20.dp)
-                clip = true
-            },
+            .clickable { uriHandler.openUri(source.url) },
         colors = CardDefaults.cardColors(
             containerColor = colors.primary.copy(alpha = 0.08f)
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp,
+            defaultElevation = 8.dp,
             pressedElevation = 8.dp,
-            hoveredElevation = 6.dp,
-            focusedElevation = 6.dp
+            focusedElevation = 8.dp,
+            hoveredElevation = 8.dp
         )
     ) {
         Box(
