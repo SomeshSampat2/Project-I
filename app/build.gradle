@@ -28,6 +28,7 @@ android {
         }
 
         buildConfigField "String", "GEMINI_API_KEY", "\"${localProperties['GEMINI_API_KEY']}\""
+        buildConfigField "String", "TAVILY_API_KEY", "\"${localProperties["TAVILY_API_KEY"]}\""
     }
 
     buildTypes {
