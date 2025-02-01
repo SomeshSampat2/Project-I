@@ -26,7 +26,7 @@ class UserViewModel : ViewModel() {
     private val TAG = "UserViewModel"
     private val repository = UserRepository()
     private val generativeModel = GenerativeModel(
-        modelName = "gemini-pro",
+        modelName = "gemini-1.5-flash",
         apiKey = BuildConfig.GEMINI_API_KEY,
         safetySettings = listOf(
             SafetySetting(harmCategory = HarmCategory.HARASSMENT, threshold = BlockThreshold.NONE),

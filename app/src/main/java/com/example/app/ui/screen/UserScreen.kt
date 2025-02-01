@@ -46,8 +46,10 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.app.data.model.SearchSource
 import com.example.app.ui.components.SearchSourcesRow
+import com.example.app.util.WelcomePrompts
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -59,6 +61,9 @@ fun UserScreen(viewModel: UserViewModel) {
     val listState = rememberLazyListState()
     val isSearchMode by viewModel.searchMode.collectAsState()
     val searchSources by viewModel.searchSources.collectAsState()
+    val placeholderText by remember { 
+        mutableStateOf(WelcomePrompts.getRandomPrompt()) 
+    }
     
     LaunchedEffect(chatMessages.size) {
         if (chatMessages.isNotEmpty()) {
@@ -75,7 +80,7 @@ fun UserScreen(viewModel: UserViewModel) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp)
                     .navigationBarsPadding(),
                 shape = RoundedCornerShape(28.dp),
                 color = Color.White,
@@ -114,7 +119,7 @@ fun UserScreen(viewModel: UserViewModel) {
                             .heightIn(min = 40.dp, max = 120.dp),
                         placeholder = { 
                             Text(
-                                if (isSearchMode) "Search the web..." else "Message Gemini...",
+                                if (isSearchMode) "Search the web..." else placeholderText,
                                 color = TextSecondary.copy(alpha = 0.6f)
                             )
                         },
@@ -237,7 +242,6 @@ fun ChatMessageItem(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
 
-        // Show sources above assistant's message
         if (!message.isUser && showSources) {
             SearchSourcesRow(
                 sources = sources,
@@ -245,62 +249,92 @@ fun ChatMessageItem(
             )
         }
 
-        Surface(
-            shape = RoundedCornerShape(
-                topStart = if (message.isUser) 16.dp else 4.dp,
-                topEnd = if (message.isUser) 4.dp else 16.dp,
-                bottomStart = 16.dp,
-                bottomEnd = 16.dp
-            ),
-            color = if (message.isUser) UserMessageBg else BotMessageBg,
+        Box(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .then(
                     if (message.isUser) {
-                        Modifier.widthIn(min = 60.dp, max = 280.dp)
+                        Modifier.wrapContentWidth()
                     } else {
                         Modifier
                             .fillMaxWidth()
                             .padding(end = 32.dp)
                     }
                 )
-                .animateContentSize(),
-            shadowElevation = 1.dp
         ) {
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = 16.dp,
-                    vertical = 8.dp
-                )
+            Surface(
+                shape = RoundedCornerShape(
+                    topStart = if (message.isUser) 16.dp else 4.dp,
+                    topEnd = if (message.isUser) 4.dp else 16.dp,
+                    bottomStart = 16.dp,
+                    bottomEnd = 16.dp
+                ),
+                color = if (message.isUser) UserMessageBg else BotMessageBg,
+                modifier = Modifier
+                    .then(
+                        if (message.isUser) {
+                            Modifier.wrapContentWidth()
+                        } else {
+                            Modifier.fillMaxWidth()
+                        }
+                    )
+                    .graphicsLayer {
+                        shadowElevation = 8f
+                        shape = RoundedCornerShape(
+                            topStart = if (message.isUser) 16.dp else 4.dp,
+                            topEnd = if (message.isUser) 4.dp else 16.dp,
+                            bottomStart = 16.dp,
+                            bottomEnd = 16.dp
+                        )
+                        clip = true
+                    }
+                    .animateContentSize(),
+                shadowElevation = 6.dp,
+                tonalElevation = 2.dp
             ) {
-                if (message.isUser) {
-                    MessageContent(message)
-                } else {
-                    val segments = TextFormatter.formatText(message.content)
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = enterTransition
-                    ) {
-                        Column {
-                            segments.forEach { segment ->
-                                if (segment.isCodeBlock) {
-                                    CodeBlock(
-                                        code = segment.text,
-                                        language = segment.language,
-                                        modifier = Modifier
-                                            .padding(vertical = 8.dp)
-                                            .fillMaxWidth()
-                                    )
-                                } else {
-                                    Text(
-                                        text = segment.text,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontFamily = OpenSansFont,
-                                            lineHeight = 24.sp,
-                                            letterSpacing = 0.2.sp
-                                        ),
-                                        color = TextPrimary
-                                    )
+                Column(
+                    modifier = Modifier
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = 8.dp
+                        )
+                        .then(
+                            if (message.isUser) {
+                                Modifier.wrapContentWidth()
+                            } else {
+                                Modifier.fillMaxWidth()
+                            }
+                        )
+                ) {
+                    if (message.isUser) {
+                        MessageContent(message)
+                    } else {
+                        val segments = TextFormatter.formatText(message.content)
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = enterTransition
+                        ) {
+                            Column {
+                                segments.forEach { segment ->
+                                    if (segment.isCodeBlock) {
+                                        CodeBlock(
+                                            code = segment.text,
+                                            language = segment.language,
+                                            modifier = Modifier
+                                                .padding(vertical = 8.dp)
+                                                .fillMaxWidth()
+                                        )
+                                    } else {
+                                        Text(
+                                            text = segment.text,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontFamily = OpenSansFont,
+                                                lineHeight = 24.sp,
+                                                letterSpacing = 0.2.sp
+                                            ),
+                                            color = TextPrimary
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -314,25 +348,34 @@ fun ChatMessageItem(
 @Composable
 private fun MessageContent(message: ChatMessage) {
     val segments = TextFormatter.formatText(message.content)
-    segments.forEach { segment ->
-        if (segment.isCodeBlock) {
-            CodeBlock(
-                code = segment.text,
-                language = segment.language,
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .fillMaxWidth()
-            )
+    Column(
+        modifier = if (message.isUser) {
+            Modifier.wrapContentWidth()
         } else {
-            Text(
-                text = segment.text,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontFamily = OpenSansFont,
-                    lineHeight = 24.sp,
-                    letterSpacing = 0.2.sp
-                ),
-                color = if (message.isUser) Color.White else TextPrimary
-            )
+            Modifier.fillMaxWidth()
+        }
+    ) {
+        segments.forEach { segment ->
+            if (segment.isCodeBlock) {
+                CodeBlock(
+                    code = segment.text,
+                    language = segment.language,
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .fillMaxWidth()
+                )
+            } else {
+                Text(
+                    text = segment.text,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontFamily = OpenSansFont,
+                        lineHeight = 24.sp,
+                        letterSpacing = 0.2.sp
+                    ),
+                    color = if (message.isUser) Color.White else TextPrimary,
+                    modifier = Modifier.wrapContentWidth()
+                )
+            }
         }
     }
 }
