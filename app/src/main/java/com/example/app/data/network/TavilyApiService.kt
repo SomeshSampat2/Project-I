@@ -1,5 +1,6 @@
 package com.example.app.data.network
 
+import com.example.app.BuildConfig
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -10,7 +11,7 @@ interface TavilyApiService {
 }
 
 data class SearchRequest(
-    @SerializedName("api_key") val apiKey: String = "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",
+    @SerializedName("api_key") val apiKey: String = BuildConfig.TAVILY_API_KEY,
     val query: String,
     @SerializedName("search_depth") val searchDepth: String = "advanced",
     @SerializedName("include_answer") val includeAnswer: Boolean = true,
