@@ -31,16 +31,30 @@ fun SuggestionsCard(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Welcome Text - Simplified design
-        Text(
-            text = "Welcome to Project I",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontFamily = OpenSansFont,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.3.sp
-            ),
-            color = Primary
-        )
+        // Welcome Text with styled Project I
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Welcome to ",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontFamily = OpenSansFont,
+                    fontWeight = FontWeight.Normal,
+                    letterSpacing = 0.3.sp
+                ),
+                color = Primary
+            )
+            Text(
+                text = "Project I",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontFamily = OpenSansFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.3.sp
+                ),
+                color = Color.Black
+            )
+        }
         
         Spacer(modifier = Modifier.height(8.dp))
         

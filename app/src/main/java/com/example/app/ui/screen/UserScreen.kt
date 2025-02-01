@@ -19,7 +19,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.app.data.model.User
 import com.example.app.data.model.ChatMessage
 import com.example.app.ui.viewmodel.UserViewModel
 import com.example.app.util.TextFormatter
@@ -210,7 +209,7 @@ fun UserScreen(viewModel: UserViewModel) {
 
                     item {
                         if (isLoading) {
-                            ShimmerEffect()
+                            ShimmerEffect(isWebSearch = isSearchMode)
                         }
                     }
                 }
@@ -251,7 +250,7 @@ fun ChatMessageItem(
         horizontalAlignment = if (message.isUser) Alignment.End else Alignment.Start
     ) {
         Text(
-            text = if (message.isUser) "You" else "Assistant",
+            text = if (message.isUser) "You" else "Project I",
             style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = OpenSansFont,
                 letterSpacing = 0.4.sp
@@ -398,86 +397,3 @@ private fun MessageContent(message: ChatMessage) {
         }
     }
 }
-
-@Composable
-fun LoadingIndicator() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(36.dp),
-            color = MaterialTheme.colorScheme.primary,
-            strokeWidth = 3.dp
-        )
-    }
-}
-
-@Composable
-fun UserCard(user: User) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = user.avatar,
-                contentDescription = "User avatar",
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column {
-                Text(
-                    text = "${user.first_name} ${user.last_name}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = user.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun BlinkingCursor() {
-    val cursorColor = MaterialTheme.colorScheme.primary
-    val infiniteTransition = rememberInfiniteTransition(label = "cursor")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(500, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "cursor"
-    )
-
-    Text(
-        text = "▌",
-        color = cursorColor.copy(alpha = alpha),
-        style = MaterialTheme.typography.bodyLarge
-    )
-} 
