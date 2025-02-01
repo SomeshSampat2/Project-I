@@ -32,24 +32,26 @@ import com.example.app.ui.theme.TextSecondary
 import com.example.app.ui.theme.UserMessageBg
 import com.example.app.ui.theme.BotMessageBg
 import com.example.app.ui.theme.InputBg
-import com.example.app.ui.theme.Divider
 import androidx.compose.ui.graphics.Color
 import com.example.app.ui.theme.OpenSansFont
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import kotlinx.coroutines.delay
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import com.example.app.ui.components.GlobeIcon
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.graphics.graphicsLayer
 import com.example.app.data.model.SearchSource
 import com.example.app.ui.components.SearchSourcesRow
 import com.example.app.util.WelcomePrompts
+import com.example.app.ui.components.SuggestionsCard
+import com.example.app.ui.components.TypewriterText
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -61,10 +63,10 @@ fun UserScreen(viewModel: UserViewModel) {
     val listState = rememberLazyListState()
     val isSearchMode by viewModel.searchMode.collectAsState()
     val searchSources by viewModel.searchSources.collectAsState()
-    val placeholderText by remember { 
-        mutableStateOf(WelcomePrompts.getRandomPrompt()) 
+    val placeholderText by remember {
+        mutableStateOf(WelcomePrompts.getRandomPrompt())
     }
-    
+
     LaunchedEffect(chatMessages.size) {
         if (chatMessages.isNotEmpty()) {
             listState.animateScrollToItem(chatMessages.size - 1)
@@ -117,7 +119,7 @@ fun UserScreen(viewModel: UserViewModel) {
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(min = 40.dp, max = 120.dp),
-                        placeholder = { 
+                        placeholder = {
                             Text(
                                 if (isSearchMode) "Search the web..." else placeholderText,
                                 color = TextSecondary.copy(alpha = 0.6f)
@@ -139,7 +141,7 @@ fun UserScreen(viewModel: UserViewModel) {
 
                     // Send button with keyboard handling
                     IconButton(
-                        onClick = { 
+                        onClick = {
                             if (command.isNotBlank()) {
                                 viewModel.processCommand(command)
                                 command = ""
@@ -164,37 +166,53 @@ fun UserScreen(viewModel: UserViewModel) {
             }
         }
     ) { paddingValues ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            state = listState,
-            contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(chatMessages.chunked(2)) { messagePair ->
-                // User message
-                messagePair.firstOrNull()?.let { userMessage ->
-                    ChatMessageItem(
-                        message = userMessage,
-                        viewModel = viewModel
-                    )
-                }
-                
-                // Assistant message with sources if available
-                messagePair.getOrNull(1)?.let { assistantMessage ->
-                    ChatMessageItem(
-                        message = assistantMessage,
-                        viewModel = viewModel,
-                        showSources = searchSources.isNotEmpty() && messagePair.first().content == chatMessages[chatMessages.lastIndex - 1].content,
-                        sources = searchSources
-                    )
-                }
-            }
-            
-            item {
-                if (isLoading) {
-                    ShimmerEffect()
+            if (chatMessages.isEmpty()) {
+                // Show suggestions when no messages
+                SuggestionsCard(
+                    onSuggestionClick = { prompt ->
+                        command = prompt
+                    },
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else {
+                // Existing LazyColumn with messages
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    state = listState,
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(chatMessages.chunked(2)) { messagePair ->
+                        // User message
+                        messagePair.firstOrNull()?.let { userMessage ->
+                            ChatMessageItem(
+                                message = userMessage,
+                                viewModel = viewModel
+                            )
+                        }
+
+                        // Assistant message with sources if available
+                        messagePair.getOrNull(1)?.let { assistantMessage ->
+                            ChatMessageItem(
+                                message = assistantMessage,
+                                viewModel = viewModel,
+                                showSources = searchSources.isNotEmpty() && messagePair.first().content == chatMessages[chatMessages.lastIndex - 1].content,
+                                sources = searchSources
+                            )
+                        }
+                    }
+
+                    item {
+                        if (isLoading) {
+                            ShimmerEffect()
+                        }
+                    }
                 }
             }
         }
@@ -325,14 +343,15 @@ fun ChatMessageItem(
                                                 .fillMaxWidth()
                                         )
                                     } else {
-                                        Text(
+                                        TypewriterText(
                                             text = segment.text,
                                             style = MaterialTheme.typography.bodyLarge.copy(
                                                 fontFamily = OpenSansFont,
                                                 lineHeight = 24.sp,
                                                 letterSpacing = 0.2.sp
                                             ),
-                                            color = TextPrimary
+                                            modifier = Modifier.animateContentSize(),
+                                            shouldAnimate = shouldAnimate
                                         )
                                     }
                                 }
@@ -440,4 +459,25 @@ fun UserCard(user: User) {
             }
         }
     }
+}
+
+@Composable
+private fun BlinkingCursor() {
+    val cursorColor = MaterialTheme.colorScheme.primary
+    val infiniteTransition = rememberInfiniteTransition(label = "cursor")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cursor"
+    )
+
+    Text(
+        text = "▌",
+        color = cursorColor.copy(alpha = alpha),
+        style = MaterialTheme.typography.bodyLarge
+    )
 } 
