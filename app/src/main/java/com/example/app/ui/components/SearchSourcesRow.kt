@@ -18,7 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app.R
 import com.example.app.data.model.SearchSource
+import com.example.app.ui.theme.LocalAppColors
 import com.example.app.ui.theme.OpenSansFont
-import com.example.app.ui.theme.Primary
 
 @Composable
 fun SearchSourcesRow(
@@ -57,92 +57,113 @@ fun SearchSourcesRow(
 @Composable
 private fun SearchSourceCard(source: SearchSource) {
     val uriHandler = LocalUriHandler.current
+    val colors = LocalAppColors.current
     
     Card(
         modifier = Modifier
             .width(300.dp)
             .height(140.dp)
             .clip(RoundedCornerShape(20.dp))
-            .clickable { uriHandler.openUri(source.url) },
+            .clickable { uriHandler.openUri(source.url) }
+            .graphicsLayer {
+                shadowElevation = 8f
+                shape = RoundedCornerShape(20.dp)
+                clip = true
+            },
         colors = CardDefaults.cardColors(
-            containerColor = Primary.copy(alpha = 0.08f)
+            containerColor = colors.primary.copy(alpha = 0.08f)
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 2.dp
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp,
+            hoveredElevation = 6.dp,
+            focusedElevation = 6.dp
         )
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            // Source badge and title row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Title
-                Text(
-                    text = source.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = OpenSansFont,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp,
-                        lineHeight = 20.sp
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            colors.surface,
+                            colors.surface.copy(alpha = 0.95f)
+                        )
+                    )
                 )
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                // Source badge
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Primary.copy(alpha = 0.12f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                // Source badge and title row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    // Title
+                    Text(
+                        text = source.title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = OpenSansFont,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                            lineHeight = 20.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    // Source badge
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = colors.primary.copy(alpha = if (colors.isDark) 0.2f else 0.12f)
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_link),
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = Primary
-                        )
-                        Text(
-                            text = "Source",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = OpenSansFont,
-                                letterSpacing = 0.3.sp,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = Primary
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_link),
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = colors.primary
+                            )
+                            Text(
+                                text = "Source",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = OpenSansFont,
+                                    letterSpacing = 0.3.sp,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = colors.primary
+                            )
+                        }
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Preview text
+                Text(
+                    text = source.content,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = OpenSansFont,
+                        lineHeight = 18.sp,
+                        fontSize = 13.sp
+                    ),
+                    color = colors.textPrimary.copy(alpha = 0.7f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Preview text
-            Text(
-                text = source.content,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontFamily = OpenSansFont,
-                    lineHeight = 18.sp,
-                    fontSize = 13.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 } 

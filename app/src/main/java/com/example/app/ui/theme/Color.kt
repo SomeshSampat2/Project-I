@@ -10,12 +10,12 @@ val Background = Color(0xFFF8FAFC)     // Very light gray-blue
 val Surface = Color(0xFFFFFFFF)        // Pure white
 val TextPrimary = Color(0xFF1E293B)    // Dark blue-gray
 val TextSecondary = Color(0xFF64748B)  // Medium blue-gray
-val UserMessageBg = Color(0xFF2563EB)  // Same as primary
-val BotMessageBg = Color(0xFFF1F5F9)   // Light gray-blue
-val InputBg = Color(0xFFF8FAFC)        // Very light background
-val Divider = Color(0xFFE2E8F0)        // Light gray
-val Error = Color(0xFFEF4444)          // Modern red
-val Success = Color(0xFF22C55E)        // Modern green
+val UserMessageBg = Primary
+val BotMessageBg = Color(0xFFFFFFFF)
+val InputBg = Color(0xFFF1F5F9)
+val Divider = Color(0xFFE2E8F0)
+val Error = Color(0xFFDC2626)
+val Success = Color(0xFF16A34A)
 
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
@@ -23,4 +23,16 @@ val Pink80 = Color(0xFFEFB8C8)
 
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260) 
+val Pink40 = Color(0xFF7D5260)
+
+// Dark Theme Colors
+val PrimaryDark_Dark = Color(0xFF60A5FA)
+val Background_Dark = Color(0xFF0F172A)
+val Surface_Dark = Color(0xFF1E293B)
+val TextPrimary_Dark = Color(0xFFF8FAFC)
+val TextSecondary_Dark = Color(0xFF94A3B8)
+val UserMessageBg_Dark = PrimaryDark_Dark
+val BotMessageBg_Dark = Color(0xFF1E293B)
+val InputBg_Dark = Color(0xFF1E293B)
+val Divider_Dark = Color(0xFF334155)
+val Warning = Color(0xFFEAB308) 
