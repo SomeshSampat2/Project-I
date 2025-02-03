@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Color
 // Modern color palette
 val Primary = Color(0xFF2563EB)        // Modern blue
 val PrimaryDark = Color(0xFF1E40AF)    // Darker blue
-val Secondary = Color(0xFF7C3AED)      // Purple accent
 val Background = Color(0xFFF8FAFC)     // Very light gray-blue
 val Surface = Color(0xFFFFFFFF)        // Pure white
 val TextPrimary = Color(0xFF1E293B)    // Dark blue-gray
@@ -17,13 +16,6 @@ val Divider = Color(0xFFE2E8F0)
 val Error = Color(0xFFDC2626)
 val Success = Color(0xFF16A34A)
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
 
 // Dark Theme Colors
 val PrimaryDark_Dark = Color(0xFF60A5FA)

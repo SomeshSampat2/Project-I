@@ -62,7 +62,7 @@ fun SuggestionsCard(
             text = "Try these examples to get started",
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontFamily = OpenSansFont,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = Color.Black
             ),
             textAlign = TextAlign.Center
         )
@@ -76,79 +76,3 @@ fun SuggestionsCard(
         )
     }
 }
-
-@Composable
-private fun SuggestionItem(
-    suggestion: Suggestion,
-    color: Color,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.1f)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    painter = painterResource(
-                        id = when (suggestion.title) {
-                            "Get Creative" -> R.drawable.ic_creative
-                            "Code Help" -> R.drawable.ic_code
-                            "Tech Trends" -> R.drawable.ic_trending
-                            "AI & ML" -> R.drawable.ic_brain
-                            "Mobile Dev" -> R.drawable.ic_code
-                            "Problem Solving" -> R.drawable.ic_brain
-                            "Learning" -> R.drawable.ic_code
-                            "UI/UX" -> R.drawable.ic_creative
-                            "Tech Career" -> R.drawable.ic_trending
-                            "System Design" -> R.drawable.ic_code
-                            "Best Practices" -> R.drawable.ic_brain
-                            "Testing" -> R.drawable.ic_code
-                            else -> R.drawable.ic_creative
-                        }
-                    ),
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(20.dp)
-                )
-                
-                Text(
-                    text = suggestion.title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontFamily = OpenSansFont,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = color
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = suggestion.prompt,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontFamily = OpenSansFont,
-                    lineHeight = 18.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-} 

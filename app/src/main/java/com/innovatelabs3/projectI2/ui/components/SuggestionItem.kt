@@ -86,7 +86,7 @@ fun SuggestionItem(
                     fontFamily = OpenSansFont,
                     lineHeight = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                color = Color.Black,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
