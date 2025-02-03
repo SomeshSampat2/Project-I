@@ -126,9 +126,10 @@ fun UserScreen(viewModel: UserViewModel) {
                             unfocusedContainerColor = InputBg
                         ),
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            fontFamily = OpenSansFont
+                            fontFamily = OpenSansFont,
+                            color = Color.Black
                         ),
-                        maxLines = 5
+                        maxLines = 5,
                     )
 
                     // Send button with keyboard handling
@@ -340,7 +341,8 @@ fun ChatMessageItem(
                                             style = MaterialTheme.typography.bodyLarge.copy(
                                                 fontFamily = OpenSansFont,
                                                 lineHeight = 24.sp,
-                                                letterSpacing = 0.2.sp
+                                                letterSpacing = 0.2.sp,
+                                                color = Color.Black
                                             ),
                                             modifier = Modifier.animateContentSize(),
                                             shouldAnimate = shouldAnimate
