@@ -18,8 +18,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.innovatelabs3.projectI2.domain.SystemQueries
 import com.innovatelabs3.projectI2.domain.QueryType
+import com.innovatelabs3.projectI2.utils.GenericUtils
+import com.innovatelabs3.projectI2.ProjectIApplication
 
 class UserViewModel : ViewModel() {
+    private val context = ProjectIApplication.getContext()
+
     private val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash",
         apiKey = BuildConfig.GEMINI_API_KEY,
@@ -96,6 +100,10 @@ class UserViewModel : ViewModel() {
                             val content = systemQueries.extractNotificationContent(command)
                             _showNotification.value = content
                             addAssistantMessage("I've shown a notification with title: ${content.title} and message: ${content.message}")
+                        }
+                        is QueryType.OpenWhatsApp -> {
+                            GenericUtils.openWhatsApp(context)
+                            addAssistantMessage("I'm opening WhatsApp for you. If it's not installed, I'll take you to the Play Store.")
                         }
                         is QueryType.Identity -> {
                             addAssistantMessage(systemQueries.getIdentityResponse())
