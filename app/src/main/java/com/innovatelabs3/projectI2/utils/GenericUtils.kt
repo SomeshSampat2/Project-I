@@ -128,5 +128,28 @@ class GenericUtils {
                 context.startActivity(intent)
             }
         }
+
+        fun openWhatsAppChat(context: Context, phoneNumber: String, message: String) {
+            try {
+                // First check if WhatsApp is installed
+                context.packageManager.getPackageInfo("com.whatsapp", PackageManager.GET_ACTIVITIES)
+                
+                // Build the URL using WhatsApp API
+                val url = "https://api.whatsapp.com/send?phone=$phoneNumber&text=${Uri.encode(message)}"
+                
+                // Create and start the intent
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse(url)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                showToast(context, "Opening WhatsApp chat...")
+            } catch (e: NameNotFoundException) {
+                // WhatsApp is not installed
+                openPlayStore(context, "com.whatsapp")
+            } catch (e: Exception) {
+                showToast(context, "Couldn't open WhatsApp chat. Please try again.")
+            }
+        }
     }
 } 

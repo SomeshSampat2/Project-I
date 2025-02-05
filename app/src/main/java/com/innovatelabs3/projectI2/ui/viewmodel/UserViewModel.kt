@@ -20,6 +20,7 @@ import com.innovatelabs3.projectI2.domain.SystemQueries
 import com.innovatelabs3.projectI2.domain.QueryType
 import com.innovatelabs3.projectI2.utils.GenericUtils
 import com.innovatelabs3.projectI2.ProjectIApplication
+import com.innovatelabs3.projectI2.utils.ContactUtils
 
 class UserViewModel : ViewModel() {
     private val context = ProjectIApplication.getContext()
@@ -111,6 +112,24 @@ class UserViewModel : ViewModel() {
                         is QueryType.General -> {
                             val response = systemQueries.handleGeneralQuery(command)
                             addAssistantMessage(response)
+                        }
+                        is QueryType.SendWhatsAppMessage -> {
+                            val content = systemQueries.extractWhatsAppMessageContent(command)
+                            if (content.contactName.isNotEmpty()) {
+                                if (ContactUtils.checkContactPermission(context)) {
+                                    val contactInfo = ContactUtils.findContactByName(context, content.contactName)
+                                    if (contactInfo != null) {
+                                        GenericUtils.openWhatsAppChat(context, contactInfo.phoneNumber, content.message)
+                                        addAssistantMessage("Opening WhatsApp chat with ${contactInfo.name}")
+                                    } else {
+                                        addAssistantMessage("Sorry, I couldn't find '${content.contactName}' in your contacts.")
+                                    }
+                                } else {
+                                    addAssistantMessage("I need permission to access contacts to find ${content.contactName}'s number. Please grant contacts permission in settings.")
+                                }
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand who you want to message.")
+                            }
                         }
                     }
                 }

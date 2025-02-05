@@ -31,12 +31,7 @@ import androidx.compose.runtime.getValue
 import com.innovatelabs3.projectI2.ui.screen.UserScreen
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.NotificationCompat
-import com.innovatelabs3.projectI2.domain.SystemQueries
-import android.content.Context
-import android.app.NotificationManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -44,6 +39,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.innovatelabs3.projectI2.utils.GenericUtils
 import androidx.compose.runtime.rememberCoroutineScope
+import com.innovatelabs3.projectI2.utils.ContactUtils
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,6 +82,16 @@ fun MainScreen(viewModel: UserViewModel) {
         }
     }
 
+    val contactPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            GenericUtils.showToast(context, "Contacts permission granted")
+        } else {
+            GenericUtils.showToast(context, "Contacts permission needed to find contact numbers")
+        }
+    }
+
     // Request notification permission on Android 13+
     LaunchedEffect(key1 = lifecycleOwner.lifecycle, key2 = context) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -96,6 +102,13 @@ fun MainScreen(viewModel: UserViewModel) {
                     requestPermissionLauncher.launch(permission)
                 }
             }
+        }
+    }
+
+    // Request contacts permission if needed
+    LaunchedEffect(Unit) {
+        if (!ContactUtils.checkContactPermission(context)) {
+            contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
         }
     }
 
