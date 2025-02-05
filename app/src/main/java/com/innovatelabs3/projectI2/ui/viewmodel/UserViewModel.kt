@@ -16,9 +16,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.innovatelabs3.projectI2.domain.SystemQueries
+import com.innovatelabs3.projectI2.domain.QueryType
 
 class UserViewModel : ViewModel() {
-    private val TAG = "UserViewModel"
     private val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash",
         apiKey = BuildConfig.GEMINI_API_KEY,
@@ -29,7 +30,8 @@ class UserViewModel : ViewModel() {
             SafetySetting(harmCategory = HarmCategory.DANGEROUS_CONTENT, threshold = BlockThreshold.NONE)
         )
     )
-    private val chat = generativeModel.startChat()
+
+    private val systemQueries = SystemQueries(generativeModel)
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -44,6 +46,15 @@ class UserViewModel : ViewModel() {
     private val animatedMessages = mutableSetOf<Long>()
     private val _searchSources = MutableStateFlow<List<SearchSource>>(emptyList())
     val searchSources: StateFlow<List<SearchSource>> = _searchSources.asStateFlow()
+
+    private val _showToast = MutableStateFlow<String?>(null)
+    val showToast: StateFlow<String?> = _showToast.asStateFlow()
+
+    private val _showSnackbar = MutableStateFlow<String?>(null)
+    val showSnackbar: StateFlow<String?> = _showSnackbar.asStateFlow()
+
+    private val _showNotification = MutableStateFlow<SystemQueries.NotificationContent?>(null)
+    val showNotification: StateFlow<SystemQueries.NotificationContent?> = _showNotification.asStateFlow()
 
     fun shouldAnimateMessage(timestamp: Long): Boolean {
         return if (timestamp !in animatedMessages) {
@@ -70,52 +81,36 @@ class UserViewModel : ViewModel() {
                 if (isSearchMode.value) {
                     handleSearchQuery(command)
                 } else {
-                    handleGeneralQuery(command)
+                    when (systemQueries.analyzeQueryType(command)) {
+                        is QueryType.ShowToast -> {
+                            val message = systemQueries.extractToastMessage(command)
+                            _showToast.value = message
+                            addAssistantMessage("I've shown a toast message saying: $message")
+                        }
+                        is QueryType.ShowSnackbar -> {
+                            val message = systemQueries.extractSnackbarMessage(command)
+                            _showSnackbar.value = message
+                            addAssistantMessage("I've shown a snackbar message saying: $message")
+                        }
+                        is QueryType.ShowNotification -> {
+                            val content = systemQueries.extractNotificationContent(command)
+                            _showNotification.value = content
+                            addAssistantMessage("I've shown a notification with title: ${content.title} and message: ${content.message}")
+                        }
+                        is QueryType.Identity -> {
+                            addAssistantMessage(systemQueries.getIdentityResponse())
+                        }
+                        is QueryType.General -> {
+                            val response = systemQueries.handleGeneralQuery(command)
+                            addAssistantMessage(response)
+                        }
+                    }
                 }
-
             } catch (e: Exception) {
                 addAssistantMessage("Sorry, I encountered an error: ${e.localizedMessage}")
             } finally {
                 _isLoading.value = false
             }
-        }
-    }
-
-    private fun addAssistantMessage(message: String) {
-        _chatMessages.value = _chatMessages.value + ChatMessage(message, false)
-    }
-
-    private suspend fun handleGeneralQuery(command: String) {
-        try {
-            val identityAnalysisPrompt = """
-                Analyze if this is a question about your identity (who you are, who made you, etc).
-                Respond with only YES or NO:
-                "$command"
-            """.trimIndent()
-            
-            val isIdentityQuestion = chat.sendMessage(identityAnalysisPrompt).text?.trim()?.equals("YES", ignoreCase = true) ?: false
-            
-            if (isIdentityQuestion) {
-                val identityResponse = """
-                    Let me introduce myself! 
-                    
-                    I'm <b>Project I</b>, an AI assistant developed by <b>Somesh Sampat</b> at <b>Innovate Labs</b> in <b>India</b>. 
-                    I'm built on top of Google's Gemini model to help users with various tasks and queries.
-                    
-                    While I leverage Gemini's powerful language understanding capabilities, my interface and specific functionalities 
-                    were custom-developed to provide a unique and helpful experience.
-                    
-                    Is there anything specific you'd like to know about my capabilities?
-                """.trimIndent()
-                
-                addAssistantMessage(identityResponse)
-            } else {
-                val newChat = generativeModel.startChat()
-                val response = newChat.sendMessage(command).text
-                addAssistantMessage(response ?: "Couldn't process request.")
-            }
-        } catch (e: Exception) {
-            addAssistantMessage("Couldn't process request: ${e.localizedMessage}")
         }
     }
 
@@ -159,7 +154,7 @@ class UserViewModel : ViewModel() {
                         - Use markdown for emphasis where appropriate
                     """.trimIndent()
 
-                    val summaryResponse = chat.sendMessage(summaryPrompt)
+                    val summaryResponse = generativeModel.startChat().sendMessage(summaryPrompt)
                     addAssistantMessage(summaryResponse.text ?: "Sorry, I couldn't find relevant information.")
                 } else {
                     // Fallback to Gemini if no search results
@@ -182,5 +177,21 @@ class UserViewModel : ViewModel() {
         val newChat = generativeModel.startChat()
         val response = newChat.sendMessage(query).text
         addAssistantMessage(response ?: "Sorry, I couldn't process your request.")
+    }
+
+    fun clearToast() {
+        _showToast.value = null
+    }
+
+    fun clearSnackbar() {
+        _showSnackbar.value = null
+    }
+
+    fun clearNotification() {
+        _showNotification.value = null
+    }
+
+    private fun addAssistantMessage(message: String) {
+        _chatMessages.value = _chatMessages.value + ChatMessage(message, false)
     }
 } 
