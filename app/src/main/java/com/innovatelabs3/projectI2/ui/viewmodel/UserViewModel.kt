@@ -115,7 +115,12 @@ class UserViewModel : ViewModel() {
                         }
                         is QueryType.SendWhatsAppMessage -> {
                             val content = systemQueries.extractWhatsAppMessageContent(command)
-                            if (content.contactName.isNotEmpty()) {
+                            if (content.phoneNumber.isNotEmpty()) {
+                                // Direct phone number was provided
+                                GenericUtils.openWhatsAppChat(context, content.phoneNumber, content.message)
+                                addAssistantMessage("Opening WhatsApp chat with ${content.phoneNumber}")
+                            } else if (content.contactName.isNotEmpty()) {
+                                // Contact name was provided
                                 if (ContactUtils.checkContactPermission(context)) {
                                     val contactInfo = ContactUtils.findContactByName(context, content.contactName)
                                     if (contactInfo != null) {
