@@ -6,6 +6,7 @@ sealed class QueryType {
     object ShowToast : QueryType()
     object ShowSnackbar : QueryType()
     object ShowNotification : QueryType()
+    object OpenWhatsApp : QueryType()
     object Identity : QueryType()
     object General : QueryType()
 }
@@ -19,6 +20,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             SHOW_TOAST - if asking to show a toast or notification message
             SHOW_SNACKBAR - if asking to show a snackbar message
             SHOW_NOTIFICATION - if asking to show a system notification
+            OPEN_WHATSAPP - if asking to open or launch WhatsApp
             IDENTITY_QUERY - if asking about who I am or my capabilities
             GENERAL_QUERY - for any other topics
             
@@ -26,6 +28,8 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Show me a toast" -> SHOW_TOAST
             "Display a snackbar" -> SHOW_SNACKBAR
             "Send a notification" -> SHOW_NOTIFICATION
+            "Open WhatsApp" -> OPEN_WHATSAPP
+            "Launch WhatsApp" -> OPEN_WHATSAPP
             "Who are you" -> IDENTITY_QUERY
             "What's the weather" -> GENERAL_QUERY
             
@@ -36,6 +40,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "SHOW_TOAST" -> QueryType.ShowToast
             "SHOW_SNACKBAR" -> QueryType.ShowSnackbar
             "SHOW_NOTIFICATION" -> QueryType.ShowNotification
+            "OPEN_WHATSAPP" -> QueryType.OpenWhatsApp
             "IDENTITY_QUERY" -> QueryType.Identity
             else -> QueryType.General
         }

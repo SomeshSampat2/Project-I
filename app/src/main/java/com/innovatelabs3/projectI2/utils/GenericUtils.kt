@@ -16,6 +16,10 @@ import com.innovatelabs3.projectI2.domain.SystemQueries
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import android.app.NotificationManager
+import android.content.Intent
+import android.net.Uri
+import android.content.pm.PackageManager.NameNotFoundException
+import android.content.ActivityNotFoundException
 
 class GenericUtils {
 
@@ -81,6 +85,48 @@ class GenericUtils {
                 }
             }
             return true // Permission is granted (or not needed)
+        }
+
+        fun openWhatsApp(context: Context) {
+            val whatsappPackage = "com.whatsapp"
+            
+            try {
+                // First check if WhatsApp is installed
+                context.packageManager.getPackageInfo(whatsappPackage, 0)
+                
+                // If we get here, WhatsApp is installed
+                val launchIntent = context.packageManager.getLaunchIntentForPackage(whatsappPackage)
+                if (launchIntent != null) {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(launchIntent)
+                    showToast(context, "Opening WhatsApp...")
+                } else {
+                    // This shouldn't happen if the package exists, but just in case
+                    openPlayStore(context, whatsappPackage)
+                }
+            } catch (e: NameNotFoundException) {
+                // WhatsApp is not installed
+                openPlayStore(context, whatsappPackage)
+            }
+        }
+
+        private fun openPlayStore(context: Context, packageName: String) {
+            showToast(context, "WhatsApp is not installed. Opening Play Store...")
+            try {
+                // Try opening in Play Store app
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("market://details?id=$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                // If Play Store app is not available, open in browser
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
         }
     }
 } 
