@@ -7,6 +7,7 @@ sealed class QueryType {
     object ShowSnackbar : QueryType()
     object ShowNotification : QueryType()
     object OpenWhatsApp : QueryType()
+    object SendWhatsAppMessage : QueryType()
     object Identity : QueryType()
     object General : QueryType()
 }
@@ -14,13 +15,20 @@ sealed class QueryType {
 class SystemQueries(private val generativeModel: GenerativeModel) {
     private val chat = generativeModel.startChat()
 
+    data class WhatsAppMessageContent(
+        val contactName: String = "",
+        val phoneNumber: String = "",
+        val message: String = ""
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
             SHOW_TOAST - if asking to show a toast or notification message
             SHOW_SNACKBAR - if asking to show a snackbar message
             SHOW_NOTIFICATION - if asking to show a system notification
-            OPEN_WHATSAPP - if asking to open or launch WhatsApp
+            OPEN_WHATSAPP - if asking to just open or launch WhatsApp
+            SEND_WHATSAPP_MESSAGE - if asking to send a WhatsApp message to someone
             IDENTITY_QUERY - if asking about who I am or my capabilities
             GENERAL_QUERY - for any other topics
             
@@ -29,7 +37,8 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Display a snackbar" -> SHOW_SNACKBAR
             "Send a notification" -> SHOW_NOTIFICATION
             "Open WhatsApp" -> OPEN_WHATSAPP
-            "Launch WhatsApp" -> OPEN_WHATSAPP
+            "Send WhatsApp message to 1234567890" -> SEND_WHATSAPP_MESSAGE
+            "Message John on WhatsApp" -> SEND_WHATSAPP_MESSAGE
             "Who are you" -> IDENTITY_QUERY
             "What's the weather" -> GENERAL_QUERY
             
@@ -41,6 +50,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "SHOW_SNACKBAR" -> QueryType.ShowSnackbar
             "SHOW_NOTIFICATION" -> QueryType.ShowNotification
             "OPEN_WHATSAPP" -> QueryType.OpenWhatsApp
+            "SEND_WHATSAPP_MESSAGE" -> QueryType.SendWhatsAppMessage
             "IDENTITY_QUERY" -> QueryType.Identity
             else -> QueryType.General
         }
@@ -104,6 +114,36 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
 
     suspend fun handleGeneralQuery(query: String): String {
         return chat.sendMessage(query).text ?: "Couldn't process request."
+    }
+
+    suspend fun extractWhatsAppMessageContent(query: String): WhatsAppMessageContent {
+        val messagePrompt = """
+            Extract contact name and message from: "$query"
+            Reply in format:
+            NAME:[contact name]
+            MSG:[message]
+            Keep it brief.
+        """.trimIndent()
+
+        val response = chat.sendMessage(messagePrompt).text?.trim() ?: return WhatsAppMessageContent()
+        
+        return try {
+            val name = response.lineSequence()
+                .firstOrNull { it.startsWith("NAME:") }
+                ?.substringAfter("NAME:")
+                ?.trim()
+                ?: ""
+
+            val message = response.lineSequence()
+                .firstOrNull { it.startsWith("MSG:") }
+                ?.substringAfter("MSG:")
+                ?.trim()
+                ?: ""
+
+            WhatsAppMessageContent(contactName = name, message = message)
+        } catch (e: Exception) {
+            WhatsAppMessageContent()
+        }
     }
 
     data class NotificationContent(
