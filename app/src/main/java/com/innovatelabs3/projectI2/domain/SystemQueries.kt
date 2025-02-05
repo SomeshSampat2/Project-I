@@ -118,9 +118,10 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
 
     suspend fun extractWhatsAppMessageContent(query: String): WhatsAppMessageContent {
         val messagePrompt = """
-            Extract contact name and message from: "$query"
+            Extract contact name/phone number and message from: "$query"
+            If number is given, format it with +91.
             Reply in format:
-            NAME:[contact name]
+            TARGET:[contact name or phone number]
             MSG:[message]
             Keep it brief.
         """.trimIndent()
@@ -128,9 +129,9 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val response = chat.sendMessage(messagePrompt).text?.trim() ?: return WhatsAppMessageContent()
         
         return try {
-            val name = response.lineSequence()
-                .firstOrNull { it.startsWith("NAME:") }
-                ?.substringAfter("NAME:")
+            val target = response.lineSequence()
+                .firstOrNull { it.startsWith("TARGET:") }
+                ?.substringAfter("TARGET:")
                 ?.trim()
                 ?: ""
 
@@ -140,7 +141,16 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
                 ?.trim()
                 ?: ""
 
-            WhatsAppMessageContent(contactName = name, message = message)
+            // Check if target is a phone number (contains only digits)
+            if (target.replace(Regex("[^0-9]"), "").length >= 10) {
+                // It's a phone number
+                val cleanNumber = target.replace(Regex("[^0-9+]"), "")
+                val formattedNumber = if (cleanNumber.startsWith("+")) cleanNumber else "+91$cleanNumber"
+                WhatsAppMessageContent(phoneNumber = formattedNumber, message = message)
+            } else {
+                // It's a contact name
+                WhatsAppMessageContent(contactName = target, message = message)
+            }
         } catch (e: Exception) {
             WhatsAppMessageContent()
         }
