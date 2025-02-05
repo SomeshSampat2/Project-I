@@ -136,6 +136,15 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand who you want to message.")
                             }
                         }
+                        is QueryType.ShowDirections -> {
+                            val content = systemQueries.extractDirectionsContent(command)
+                            if (content.destination.isNotEmpty()) {
+                                GenericUtils.openGoogleMaps(context, content.destination)
+                                addAssistantMessage("Opening Google Maps with directions to ${content.destination}")
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand the destination. Please specify where you want to go.")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {

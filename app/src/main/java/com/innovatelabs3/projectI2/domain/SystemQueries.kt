@@ -10,6 +10,7 @@ sealed class QueryType {
     object SendWhatsAppMessage : QueryType()
     object Identity : QueryType()
     object General : QueryType()
+    object ShowDirections : QueryType()
 }
 
 class SystemQueries(private val generativeModel: GenerativeModel) {
@@ -21,6 +22,10 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val message: String = ""
     )
 
+    data class DirectionsContent(
+        val destination: String
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -29,10 +34,14 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             SHOW_NOTIFICATION - if asking to show a system notification
             OPEN_WHATSAPP - if asking to just open or launch WhatsApp
             SEND_WHATSAPP_MESSAGE - if asking to send a WhatsApp message to someone
+            SHOW_DIRECTIONS - if asking for directions or navigation to a place
             IDENTITY_QUERY - if asking about who I am or my capabilities
             GENERAL_QUERY - for any other topics
             
             Examples:
+            "Show me directions to Central Park" -> SHOW_DIRECTIONS
+            "Navigate to Times Square" -> SHOW_DIRECTIONS
+            "How do I get to the airport" -> SHOW_DIRECTIONS
             "Show me a toast" -> SHOW_TOAST
             "Display a snackbar" -> SHOW_SNACKBAR
             "Send a notification" -> SHOW_NOTIFICATION
@@ -51,6 +60,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "SHOW_NOTIFICATION" -> QueryType.ShowNotification
             "OPEN_WHATSAPP" -> QueryType.OpenWhatsApp
             "SEND_WHATSAPP_MESSAGE" -> QueryType.SendWhatsAppMessage
+            "SHOW_DIRECTIONS" -> QueryType.ShowDirections
             "IDENTITY_QUERY" -> QueryType.Identity
             else -> QueryType.General
         }
@@ -153,6 +163,29 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             }
         } catch (e: Exception) {
             WhatsAppMessageContent()
+        }
+    }
+
+    suspend fun extractDirectionsContent(query: String): DirectionsContent {
+        val directionsPrompt = """
+            Extract the destination from: "$query"
+            Reply in format:
+            DEST:[destination address or place name]
+            Keep it brief and specific.
+        """.trimIndent()
+
+        val response = chat.sendMessage(directionsPrompt).text?.trim() ?: return DirectionsContent("")
+        
+        return try {
+            val destination = response.lineSequence()
+                .firstOrNull { it.startsWith("DEST:") }
+                ?.substringAfter("DEST:")
+                ?.trim()
+                ?: ""
+            
+            DirectionsContent(destination)
+        } catch (e: Exception) {
+            DirectionsContent("")
         }
     }
 

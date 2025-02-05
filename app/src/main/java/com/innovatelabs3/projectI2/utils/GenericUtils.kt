@@ -151,5 +151,29 @@ class GenericUtils {
                 showToast(context, "Couldn't open WhatsApp chat. Please try again.")
             }
         }
+
+        fun openGoogleMaps(context: Context, destination: String) {
+            try {
+                // First check if Google Maps is installed
+                context.packageManager.getPackageInfo("com.google.android.apps.maps", 0)
+                
+                // Create the maps intent
+                val encodedDest = Uri.encode(destination)
+                val mapsUri = Uri.parse("google.navigation:q=$encodedDest")
+                val intent = Intent(Intent.ACTION_VIEW, mapsUri).apply {
+                    setPackage("com.google.android.apps.maps")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                
+                context.startActivity(intent)
+                showToast(context, "Opening Google Maps...")
+            } catch (e: NameNotFoundException) {
+                // Google Maps is not installed
+                showToast(context, "Google Maps is not installed. Opening Play Store...")
+                openPlayStore(context, "com.google.android.apps.maps")
+            } catch (e: ActivityNotFoundException) {
+                showToast(context, "Couldn't open Google Maps. Please try again.")
+            }
+        }
     }
 } 
