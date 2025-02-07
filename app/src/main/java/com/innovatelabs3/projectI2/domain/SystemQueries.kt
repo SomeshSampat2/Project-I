@@ -12,6 +12,7 @@ sealed class QueryType {
     object General : QueryType()
     object ShowDirections : QueryType()
     object SearchYouTube : QueryType()
+    object OpenInstagramProfile : QueryType()
 }
 
 class SystemQueries(private val generativeModel: GenerativeModel) {
@@ -31,6 +32,10 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val searchQuery: String
     )
 
+    data class InstagramProfileContent(
+        val username: String
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -43,6 +48,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             SEARCH_YOUTUBE - if asking to search or watch videos on YouTube
             IDENTITY_QUERY - if asking about who I am or my capabilities
             GENERAL_QUERY - for any other topics
+            OPEN_INSTAGRAM - if asking to open or view someone's Instagram profile
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -59,6 +65,9 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Show me videos of cooking pasta" -> SEARCH_YOUTUBE
             "Search YouTube for Taylor Swift" -> SEARCH_YOUTUBE
             "Find workout videos on YouTube" -> SEARCH_YOUTUBE
+            "Show me John's Instagram profile" -> OPEN_INSTAGRAM
+            "Open Instagram profile of taylorswift" -> OPEN_INSTAGRAM
+            "Take me to @username on Instagram" -> OPEN_INSTAGRAM
             
             Query: "$query"
         """.trimIndent()
@@ -72,6 +81,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "SHOW_DIRECTIONS" -> QueryType.ShowDirections
             "SEARCH_YOUTUBE" -> QueryType.SearchYouTube
             "IDENTITY_QUERY" -> QueryType.Identity
+            "OPEN_INSTAGRAM" -> QueryType.OpenInstagramProfile
             else -> QueryType.General
         }
     }
@@ -219,6 +229,30 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             YouTubeSearchContent(searchQuery)
         } catch (e: Exception) {
             YouTubeSearchContent("")
+        }
+    }
+
+    suspend fun extractInstagramUsername(query: String): InstagramProfileContent {
+        val usernamePrompt = """
+            Extract Instagram username from: "$query"
+            Reply in format:
+            USER:[username without @ symbol]
+            Keep it brief.
+        """.trimIndent()
+
+        val response = chat.sendMessage(usernamePrompt).text?.trim() ?: return InstagramProfileContent("")
+        
+        return try {
+            val username = response.lineSequence()
+                .firstOrNull { it.startsWith("USER:") }
+                ?.substringAfter("USER:")
+                ?.trim()
+                ?.removePrefix("@")  // Remove @ if present
+                ?: ""
+            
+            InstagramProfileContent(username)
+        } catch (e: Exception) {
+            InstagramProfileContent("")
         }
     }
 

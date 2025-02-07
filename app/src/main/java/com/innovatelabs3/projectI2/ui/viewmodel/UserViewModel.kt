@@ -154,6 +154,15 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand what you want to search for on YouTube.")
                             }
                         }
+                        is QueryType.OpenInstagramProfile -> {
+                            val content = systemQueries.extractInstagramUsername(command)
+                            if (content.username.isNotEmpty()) {
+                                GenericUtils.openInstagramProfile(context, content.username)
+                                addAssistantMessage("Opening Instagram profile for @${content.username}")
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand which Instagram profile you want to view.")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
