@@ -17,6 +17,7 @@ sealed class QueryType {
     object SearchSpotify : QueryType()
     object BookUber : QueryType()
     object SearchProduct : QueryType()
+    object SaveContact : QueryType()
 }
 
 class SystemQueries(private val generativeModel: GenerativeModel) {
@@ -58,6 +59,11 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val platform: String = "flipkart" // "flipkart" or "amazon"
     )
 
+    data class ContactSaveContent(
+        val name: String,
+        val phoneNumber: String
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -77,6 +83,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             SEARCH_SPOTIFY - if asking to search or play music on Spotify
             BOOK_UBER - if asking to book an Uber ride or get a cab to somewhere
             SEARCH_PRODUCT - if asking to search for a product on Flipkart or Amazon
+            SAVE_CONTACT - if asking to save or add a contact/phone number
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -109,6 +116,9 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Search for iPhone on Flipkart" -> SEARCH_PRODUCT
             "Find me headphones on Amazon" -> SEARCH_PRODUCT
             "Look for running shoes" -> SEARCH_PRODUCT
+            "Save John's number 9876543210" -> SAVE_CONTACT
+            "Add contact Mary with phone 1234567890" -> SAVE_CONTACT
+            "Save this number 9898989898 as Dad" -> SAVE_CONTACT
             
             Query: "$query"
         """.trimIndent()
@@ -127,6 +137,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "SEARCH_SPOTIFY" -> QueryType.SearchSpotify
             "BOOK_UBER" -> QueryType.BookUber
             "SEARCH_PRODUCT" -> QueryType.SearchProduct
+            "SAVE_CONTACT" -> QueryType.SaveContact
             else -> QueryType.General
         }
     }
@@ -408,6 +419,42 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             ProductSearchContent(searchQuery, platform)
         } catch (e: Exception) {
             ProductSearchContent("")
+        }
+    }
+
+    suspend fun extractContactDetails(query: String): ContactSaveContent {
+        val contactPrompt = """
+            Extract name and phone number from: "$query"
+            Reply in format:
+            NAME:[contact name]
+            PHONE:[phone number]
+            Format phone number with only digits.
+            Keep it brief.
+        """.trimIndent()
+
+        val response = chat.sendMessage(contactPrompt).text?.trim() ?: return ContactSaveContent("", "")
+        
+        return try {
+            val name = response.lineSequence()
+                .firstOrNull { it.startsWith("NAME:") }
+                ?.substringAfter("NAME:")
+                ?.trim()
+                ?.split(" ")
+                ?.joinToString(" ") { word -> 
+                    word.lowercase().replaceFirstChar { it.uppercase() }
+                }
+                ?: ""
+
+            val phone = response.lineSequence()
+                .firstOrNull { it.startsWith("PHONE:") }
+                ?.substringAfter("PHONE:")
+                ?.trim()
+                ?.replace(Regex("[^0-9]"), "")  // Keep only digits
+                ?: ""
+            
+            ContactSaveContent(name, phone)
+        } catch (e: Exception) {
+            ContactSaveContent("", "")
         }
     }
 
