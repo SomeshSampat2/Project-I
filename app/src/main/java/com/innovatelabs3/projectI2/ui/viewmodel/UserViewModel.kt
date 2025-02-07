@@ -61,6 +61,11 @@ class UserViewModel : ViewModel() {
     private val _showNotification = MutableStateFlow<SystemQueries.NotificationContent?>(null)
     val showNotification: StateFlow<SystemQueries.NotificationContent?> = _showNotification.asStateFlow()
 
+    private val _requestPermission = MutableStateFlow<String?>(null)
+    val requestPermission: StateFlow<String?> = _requestPermission.asStateFlow()
+
+    private var lastOperation: (() -> Unit)? = null
+
     fun shouldAnimateMessage(timestamp: Long): Boolean {
         return if (timestamp !in animatedMessages) {
             animatedMessages.add(timestamp)
@@ -201,6 +206,33 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand what product you want to search for.")
                             }
                         }
+                        is QueryType.SaveContact -> {
+                            val content = systemQueries.extractContactDetails(command)
+                            if (content.name.isNotEmpty() && content.phoneNumber.isNotEmpty()) {
+                                if (ContactUtils.checkContactPermission(context)) {
+                                    if (ContactUtils.saveContact(context, content.name, content.phoneNumber)) {
+                                        addAssistantMessage("Contact saved: ${content.name} (${content.phoneNumber})")
+                                    } else {
+                                        addAssistantMessage("Sorry, couldn't save the contact. Please try again.")
+                                    }
+                                } else {
+                                    // Store the operation for retry
+                                    lastOperation = {
+                                        viewModelScope.launch {
+                                            if (ContactUtils.saveContact(context, content.name, content.phoneNumber)) {
+                                                addAssistantMessage("Contact saved: ${content.name} (${content.phoneNumber})")
+                                            } else {
+                                                addAssistantMessage("Sorry, couldn't save the contact. Please try again.")
+                                            }
+                                        }
+                                    }
+                                    _requestPermission.value = "contacts"
+                                    addAssistantMessage("I need permission to save contacts. Please grant the permission when prompted.")
+                                }
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand the contact details. Please provide both name and phone number.")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -286,6 +318,15 @@ class UserViewModel : ViewModel() {
 
     fun clearNotification() {
         _showNotification.value = null
+    }
+
+    fun clearPermissionRequest() {
+        _requestPermission.value = null
+    }
+
+    fun retryLastOperation() {
+        lastOperation?.invoke()
+        lastOperation = null
     }
 
     private fun addAssistantMessage(message: String) {

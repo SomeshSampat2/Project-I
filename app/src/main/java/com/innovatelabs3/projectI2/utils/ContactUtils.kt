@@ -5,6 +5,8 @@ import android.provider.ContactsContract
 import android.content.pm.PackageManager
 import android.Manifest
 import androidx.core.content.ContextCompat
+import android.content.ContentProviderOperation
+import java.util.ArrayList
 
 class ContactUtils {
     companion object {
@@ -66,10 +68,46 @@ class ContactUtils {
         }
 
         fun checkContactPermission(context: Context): Boolean {
-            return ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_CONTACTS
-            ) == PackageManager.PERMISSION_GRANTED
+            return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED
+        }
+
+        fun saveContact(context: Context, name: String, phoneNumber: String): Boolean {
+            try {
+                val ops = ArrayList<ContentProviderOperation>()
+                
+                // Create raw contact
+                ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                    .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+                    .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                    .build())
+
+                // Add name
+                ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                    .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name)
+                    .build())
+
+                // Add phone number
+                ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                    .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phoneNumber)
+                    .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                    .build())
+
+                // Perform the operations
+                context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops)
+                // Show success toast
+                GenericUtils.showToast(context, "Contact saved: $name")
+                return true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Show error toast
+                GenericUtils.showToast(context, "Failed to save contact")
+                return false
+            }
         }
     }
 } 

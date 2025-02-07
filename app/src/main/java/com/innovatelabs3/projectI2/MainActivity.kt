@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -39,9 +40,23 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.innovatelabs3.projectI2.utils.GenericUtils
 import androidx.compose.runtime.rememberCoroutineScope
-import com.innovatelabs3.projectI2.utils.ContactUtils
+import android.app.AlertDialog
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: UserViewModel by viewModels()
+    
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.entries.all { it.value }
+        if (allGranted) {
+            viewModel.retryLastOperation()
+        } else {
+            // Show message if permission was denied
+            GenericUtils.showToast(this, "Contact permissions are required to save contacts")
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -54,7 +69,57 @@ class MainActivity : ComponentActivity() {
                     MainScreen(viewModel)
                 }
             }
+
+            // Observe permission requests
+            LaunchedEffect(Unit) {
+                viewModel.requestPermission.collect { permission ->
+                    when (permission) {
+                        "contacts" -> {
+                            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS) ||
+                                shouldShowRequestPermissionRationale(Manifest.permission.WRITE_CONTACTS)) {
+                                // Show in-app rationale dialog and then request permission
+                                showPermissionRationaleDialog(
+                                    onConfirm = {
+                                        requestPermissionLauncher.launch(
+                                            arrayOf(
+                                                Manifest.permission.READ_CONTACTS,
+                                                Manifest.permission.WRITE_CONTACTS
+                                            )
+                                        )
+                                    },
+                                    onDismiss = {
+                                        GenericUtils.showToast(this@MainActivity, 
+                                            "Contact permissions are needed to save contacts")
+                                    }
+                                )
+                            } else {
+                                // Directly request permission
+                                requestPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.READ_CONTACTS,
+                                        Manifest.permission.WRITE_CONTACTS
+                                    )
+                                )
+                            }
+                            viewModel.clearPermissionRequest()
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    private fun showPermissionRationaleDialog(
+        onConfirm: () -> Unit,
+        onDismiss: () -> Unit
+    ) {
+        AlertDialog.Builder(this)
+            .setTitle("Permission Required")
+            .setMessage("Contact permission is needed to save contacts. Would you like to grant this permission?")
+            .setPositiveButton("Yes") { _, _ -> onConfirm() }
+            .setNegativeButton("No") { _, _ -> onDismiss() }
+            .setCancelable(false)
+            .show()
     }
 }
 
@@ -82,16 +147,6 @@ fun MainScreen(viewModel: UserViewModel) {
         }
     }
 
-    val contactPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            GenericUtils.showToast(context, "Contacts permission granted")
-        } else {
-            GenericUtils.showToast(context, "Contacts permission needed to find contact numbers")
-        }
-    }
-
     // Request notification permission on Android 13+
     LaunchedEffect(key1 = lifecycleOwner.lifecycle, key2 = context) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -102,13 +157,6 @@ fun MainScreen(viewModel: UserViewModel) {
                     requestPermissionLauncher.launch(permission)
                 }
             }
-        }
-    }
-
-    // Request contacts permission if needed
-    LaunchedEffect(Unit) {
-        if (!ContactUtils.checkContactPermission(context)) {
-            contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
         }
     }
 
