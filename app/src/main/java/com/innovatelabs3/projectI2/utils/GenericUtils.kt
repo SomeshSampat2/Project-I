@@ -360,5 +360,73 @@ class GenericUtils {
                 }
             }
         }
+
+        fun searchProduct(context: Context, query: String, platform: String = "flipkart") {
+            when (platform.lowercase()) {
+                "amazon" -> searchAmazon(context, query)
+                else -> searchFlipkart(context, query)
+            }
+        }
+
+        private fun searchFlipkart(context: Context, query: String) {
+            try {
+                // First check if Flipkart is installed
+                context.packageManager.getPackageInfo("com.flipkart.android", 0)
+                
+                // Create the Flipkart search intent with the correct deep link format
+                val encodedQuery = Uri.encode(query)
+                val flipkartIntent = Intent(Intent.ACTION_VIEW).apply {
+                    // Using the correct Flipkart deep link format
+                    data = Uri.parse("https://dl.flipkart.com/dl/search?q=$encodedQuery")
+                    setPackage("com.flipkart.android")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                
+                context.startActivity(flipkartIntent)
+                showToast(context, "Searching on Flipkart...")
+            } catch (e: NameNotFoundException) {
+                // Flipkart is not installed
+                try {
+                    val browserIntent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse("https://www.flipkart.com/search?q=${Uri.encode(query)}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(browserIntent)
+                    showToast(context, "Opening Flipkart in browser...")
+                } catch (e: Exception) {
+                    showToast(context, "Couldn't open Flipkart. Please try again.")
+                }
+            }
+        }
+
+        private fun searchAmazon(context: Context, query: String) {
+            try {
+                // First check if Amazon is installed
+                context.packageManager.getPackageInfo("com.amazon.mShop.android.shopping", 0)
+                
+                // Create the Amazon search intent
+                val encodedQuery = Uri.encode(query)
+                val amazonIntent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("amzn://amazon.com/s?k=$encodedQuery")
+                    setPackage("com.amazon.mShop.android.shopping")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                
+                context.startActivity(amazonIntent)
+                showToast(context, "Searching on Amazon...")
+            } catch (e: NameNotFoundException) {
+                // Amazon is not installed
+                try {
+                    val browserIntent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse("https://www.amazon.in/s?k=${Uri.encode(query)}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(browserIntent)
+                    showToast(context, "Opening Amazon in browser...")
+                } catch (e: Exception) {
+                    showToast(context, "Couldn't open Amazon. Please try again.")
+                }
+            }
+        }
     }
 } 

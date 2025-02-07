@@ -16,6 +16,7 @@ sealed class QueryType {
     object JoinGoogleMeet : QueryType()
     object SearchSpotify : QueryType()
     object BookUber : QueryType()
+    object SearchProduct : QueryType()
 }
 
 class SystemQueries(private val generativeModel: GenerativeModel) {
@@ -52,6 +53,11 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val destination: String
     )
 
+    data class ProductSearchContent(
+        val query: String,
+        val platform: String = "flipkart" // "flipkart" or "amazon"
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -70,6 +76,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             JOIN_MEET - if asking to join or open a Google Meet meeting
             SEARCH_SPOTIFY - if asking to search or play music on Spotify
             BOOK_UBER - if asking to book an Uber ride or get a cab to somewhere
+            SEARCH_PRODUCT - if asking to search for a product on Flipkart or Amazon
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -99,6 +106,9 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Book an Uber to Central Park" -> BOOK_UBER
             "Get me a cab to the airport" -> BOOK_UBER
             "Call Uber to take me to Times Square" -> BOOK_UBER
+            "Search for iPhone on Flipkart" -> SEARCH_PRODUCT
+            "Find me headphones on Amazon" -> SEARCH_PRODUCT
+            "Look for running shoes" -> SEARCH_PRODUCT
             
             Query: "$query"
         """.trimIndent()
@@ -116,6 +126,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "JOIN_MEET" -> QueryType.JoinGoogleMeet
             "SEARCH_SPOTIFY" -> QueryType.SearchSpotify
             "BOOK_UBER" -> QueryType.BookUber
+            "SEARCH_PRODUCT" -> QueryType.SearchProduct
             else -> QueryType.General
         }
     }
@@ -365,6 +376,38 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             UberRideContent(destination)
         } catch (e: Exception) {
             UberRideContent("")
+        }
+    }
+
+    suspend fun extractProductSearchContent(query: String): ProductSearchContent {
+        val searchPrompt = """
+            Extract product search query and platform from: "$query"
+            Reply in format:
+            PLATFORM:[flipkart/amazon]
+            QUERY:[product to search]
+            Default to flipkart if platform not specified.
+            Keep it brief.
+        """.trimIndent()
+
+        val response = chat.sendMessage(searchPrompt).text?.trim() ?: return ProductSearchContent("")
+        
+        return try {
+            val platform = response.lineSequence()
+                .firstOrNull { it.startsWith("PLATFORM:") }
+                ?.substringAfter("PLATFORM:")
+                ?.trim()
+                ?.lowercase()
+                ?: "flipkart"
+
+            val searchQuery = response.lineSequence()
+                .firstOrNull { it.startsWith("QUERY:") }
+                ?.substringAfter("QUERY:")
+                ?.trim()
+                ?: ""
+            
+            ProductSearchContent(searchQuery, platform)
+        } catch (e: Exception) {
+            ProductSearchContent("")
         }
     }
 
