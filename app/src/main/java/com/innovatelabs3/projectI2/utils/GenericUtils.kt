@@ -175,5 +175,39 @@ class GenericUtils {
                 showToast(context, "Couldn't open Google Maps. Please try again.")
             }
         }
+
+        fun openYouTubeSearch(context: Context, query: String) {
+            try {
+                // First check if YouTube is installed
+                context.packageManager.getPackageInfo("com.google.android.youtube", 0)
+                
+                // Create the YouTube search intent with the correct URL scheme
+                val encodedQuery = Uri.encode(query)
+                val youtubeIntent = Intent(Intent.ACTION_SEARCH).apply {
+                    setPackage("com.google.android.youtube")
+                    putExtra("query", query)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                
+                context.startActivity(youtubeIntent)
+                showToast(context, "Opening YouTube search...")
+            } catch (e: NameNotFoundException) {
+                // YouTube is not installed
+                showToast(context, "YouTube is not installed. Opening Play Store...")
+                openPlayStore(context, "com.google.android.youtube")
+            } catch (e: ActivityNotFoundException) {
+                // Fallback to browser if app intent fails
+                try {
+                    val browserIntent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(browserIntent)
+                    showToast(context, "Opening YouTube in browser...")
+                } catch (e: Exception) {
+                    showToast(context, "Couldn't open YouTube. Please try again.")
+                }
+            }
+        }
     }
 } 
