@@ -191,6 +191,16 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand where you want to go. Please specify the destination.")
                             }
                         }
+                        is QueryType.SearchProduct -> {
+                            val content = systemQueries.extractProductSearchContent(command)
+                            if (content.query.isNotEmpty()) {
+                                GenericUtils.searchProduct(context, content.query, content.platform)
+                                val platformMsg = if (content.platform == "amazon") "Amazon" else "Flipkart"
+                                addAssistantMessage("Searching for '${content.query}' on $platformMsg")
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand what product you want to search for.")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
