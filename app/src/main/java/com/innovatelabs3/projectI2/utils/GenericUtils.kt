@@ -323,5 +323,42 @@ class GenericUtils {
                 }
             }
         }
+
+        fun bookUberRide(context: Context, destination: String) {
+            try {
+                // First check if Uber is installed
+                context.packageManager.getPackageInfo("com.ubercab", 0)
+                
+                // Create the Uber deep link
+                val encodedDest = Uri.encode(destination)
+                val uberUri = "uber://?action=setPickup&pickup=my_location&dropoff[formatted_address]=$encodedDest"
+                
+                val uberIntent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse(uberUri)
+                    setPackage("com.ubercab")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                
+                context.startActivity(uberIntent)
+                showToast(context, "Opening Uber...")
+            } catch (e: NameNotFoundException) {
+                // Uber is not installed
+                showToast(context, "Uber is not installed. Opening Play Store...")
+                openPlayStore(context, "com.ubercab")
+            } catch (e: ActivityNotFoundException) {
+                // Fallback to browser
+                try {
+                    val browserIntent = Intent(Intent.ACTION_VIEW).apply {
+                        val mobileUrl = "https://m.uber.com/ul/?drop=${Uri.encode(destination)}"
+                        data = Uri.parse(mobileUrl)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(browserIntent)
+                    showToast(context, "Opening Uber in browser...")
+                } catch (e: Exception) {
+                    showToast(context, "Couldn't open Uber. Please try again.")
+                }
+            }
+        }
     }
 } 

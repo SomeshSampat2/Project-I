@@ -15,6 +15,7 @@ sealed class QueryType {
     object OpenInstagramProfile : QueryType()
     object JoinGoogleMeet : QueryType()
     object SearchSpotify : QueryType()
+    object BookUber : QueryType()
 }
 
 class SystemQueries(private val generativeModel: GenerativeModel) {
@@ -47,6 +48,10 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val type: String = "track" // "track" or "artist"
     )
 
+    data class UberRideContent(
+        val destination: String
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -64,6 +69,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             OPEN_INSTAGRAM - if asking to open or view someone's Instagram profile
             JOIN_MEET - if asking to join or open a Google Meet meeting
             SEARCH_SPOTIFY - if asking to search or play music on Spotify
+            BOOK_UBER - if asking to book an Uber ride or get a cab to somewhere
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -90,6 +96,9 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Find Ed Sheeran songs on Spotify" -> SEARCH_SPOTIFY
             "Search for Taylor Swift on Spotify" -> SEARCH_SPOTIFY
             "Show me Coldplay tracks" -> SEARCH_SPOTIFY
+            "Book an Uber to Central Park" -> BOOK_UBER
+            "Get me a cab to the airport" -> BOOK_UBER
+            "Call Uber to take me to Times Square" -> BOOK_UBER
             
             Query: "$query"
         """.trimIndent()
@@ -106,6 +115,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "OPEN_INSTAGRAM" -> QueryType.OpenInstagramProfile
             "JOIN_MEET" -> QueryType.JoinGoogleMeet
             "SEARCH_SPOTIFY" -> QueryType.SearchSpotify
+            "BOOK_UBER" -> QueryType.BookUber
             else -> QueryType.General
         }
     }
@@ -332,6 +342,29 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             SpotifySearchContent(searchQuery, type)
         } catch (e: Exception) {
             SpotifySearchContent("")
+        }
+    }
+
+    suspend fun extractUberDestination(query: String): UberRideContent {
+        val uberPrompt = """
+            Extract the destination for Uber ride from: "$query"
+            Reply in format:
+            DEST:[destination address or place name]
+            Keep it brief and specific.
+        """.trimIndent()
+
+        val response = chat.sendMessage(uberPrompt).text?.trim() ?: return UberRideContent("")
+        
+        return try {
+            val destination = response.lineSequence()
+                .firstOrNull { it.startsWith("DEST:") }
+                ?.substringAfter("DEST:")
+                ?.trim()
+                ?: ""
+            
+            UberRideContent(destination)
+        } catch (e: Exception) {
+            UberRideContent("")
         }
     }
 
