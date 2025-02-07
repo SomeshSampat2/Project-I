@@ -209,5 +209,37 @@ class GenericUtils {
                 }
             }
         }
+
+        fun openInstagramProfile(context: Context, username: String) {
+            try {
+                // First check if Instagram is installed
+                context.packageManager.getPackageInfo("com.instagram.android", 0)
+                
+                // Try to open in Instagram app first
+                val instaIntent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("instagram://user?username=$username")
+                    setPackage("com.instagram.android")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(instaIntent)
+                showToast(context, "Opening Instagram profile...")
+            } catch (e: NameNotFoundException) {
+                // Instagram is not installed
+                showToast(context, "Instagram is not installed. Opening Play Store...")
+                openPlayStore(context, "com.instagram.android")
+            } catch (e: ActivityNotFoundException) {
+                // Fallback to browser
+                try {
+                    val browserIntent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse("https://www.instagram.com/$username")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(browserIntent)
+                    showToast(context, "Opening Instagram profile in browser...")
+                } catch (e: Exception) {
+                    showToast(context, "Couldn't open Instagram profile. Please try again.")
+                }
+            }
+        }
     }
 } 
