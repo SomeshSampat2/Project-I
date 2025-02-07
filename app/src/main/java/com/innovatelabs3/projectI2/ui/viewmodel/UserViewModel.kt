@@ -163,6 +163,15 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand which Instagram profile you want to view.")
                             }
                         }
+                        is QueryType.JoinGoogleMeet -> {
+                            val content = systemQueries.extractGoogleMeetCode(command)
+                            if (content.meetingCode.isNotEmpty()) {
+                                GenericUtils.joinGoogleMeet(context, content.meetingCode)
+                                addAssistantMessage("Opening Google Meet with code: ${content.meetingCode}")
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't find a valid Google Meet code in your request.")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
