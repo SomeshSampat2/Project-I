@@ -182,6 +182,15 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand what you want to search for on Spotify.")
                             }
                         }
+                        is QueryType.BookUber -> {
+                            val content = systemQueries.extractUberDestination(command)
+                            if (content.destination.isNotEmpty()) {
+                                GenericUtils.bookUberRide(context, content.destination)
+                                addAssistantMessage("Opening Uber to book a ride to ${content.destination}")
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand where you want to go. Please specify the destination.")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
