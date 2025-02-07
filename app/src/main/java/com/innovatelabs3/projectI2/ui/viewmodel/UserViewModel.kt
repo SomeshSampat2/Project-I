@@ -145,6 +145,15 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand the destination. Please specify where you want to go.")
                             }
                         }
+                        is QueryType.SearchYouTube -> {
+                            val content = systemQueries.extractYouTubeSearchQuery(command)
+                            if (content.searchQuery.isNotEmpty()) {
+                                GenericUtils.openYouTubeSearch(context, content.searchQuery)
+                                addAssistantMessage("Opening YouTube to search for '${content.searchQuery}'")
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand what you want to search for on YouTube.")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {

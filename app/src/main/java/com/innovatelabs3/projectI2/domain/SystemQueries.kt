@@ -11,6 +11,7 @@ sealed class QueryType {
     object Identity : QueryType()
     object General : QueryType()
     object ShowDirections : QueryType()
+    object SearchYouTube : QueryType()
 }
 
 class SystemQueries(private val generativeModel: GenerativeModel) {
@@ -26,6 +27,10 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val destination: String
     )
 
+    data class YouTubeSearchContent(
+        val searchQuery: String
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -35,6 +40,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             OPEN_WHATSAPP - if asking to just open or launch WhatsApp
             SEND_WHATSAPP_MESSAGE - if asking to send a WhatsApp message to someone
             SHOW_DIRECTIONS - if asking for directions or navigation to a place
+            SEARCH_YOUTUBE - if asking to search or watch videos on YouTube
             IDENTITY_QUERY - if asking about who I am or my capabilities
             GENERAL_QUERY - for any other topics
             
@@ -50,6 +56,9 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Message John on WhatsApp" -> SEND_WHATSAPP_MESSAGE
             "Who are you" -> IDENTITY_QUERY
             "What's the weather" -> GENERAL_QUERY
+            "Show me videos of cooking pasta" -> SEARCH_YOUTUBE
+            "Search YouTube for Taylor Swift" -> SEARCH_YOUTUBE
+            "Find workout videos on YouTube" -> SEARCH_YOUTUBE
             
             Query: "$query"
         """.trimIndent()
@@ -61,6 +70,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "OPEN_WHATSAPP" -> QueryType.OpenWhatsApp
             "SEND_WHATSAPP_MESSAGE" -> QueryType.SendWhatsAppMessage
             "SHOW_DIRECTIONS" -> QueryType.ShowDirections
+            "SEARCH_YOUTUBE" -> QueryType.SearchYouTube
             "IDENTITY_QUERY" -> QueryType.Identity
             else -> QueryType.General
         }
@@ -186,6 +196,29 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             DirectionsContent(destination)
         } catch (e: Exception) {
             DirectionsContent("")
+        }
+    }
+
+    suspend fun extractYouTubeSearchQuery(query: String): YouTubeSearchContent {
+        val searchPrompt = """
+            Extract the search query for YouTube from: "$query"
+            Reply in format:
+            SEARCH:[what to search for]
+            Keep it brief and specific.
+        """.trimIndent()
+
+        val response = chat.sendMessage(searchPrompt).text?.trim() ?: return YouTubeSearchContent("")
+        
+        return try {
+            val searchQuery = response.lineSequence()
+                .firstOrNull { it.startsWith("SEARCH:") }
+                ?.substringAfter("SEARCH:")
+                ?.trim()
+                ?: ""
+            
+            YouTubeSearchContent(searchQuery)
+        } catch (e: Exception) {
+            YouTubeSearchContent("")
         }
     }
 
