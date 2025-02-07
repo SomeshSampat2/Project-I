@@ -277,5 +277,51 @@ class GenericUtils {
                 }
             }
         }
+
+        fun searchSpotify(context: Context, query: String, type: String = "track") {
+            try {
+                // First check if Spotify is installed
+                context.packageManager.getPackageInfo("com.spotify.music", 0)
+                
+                // Create the Spotify search intent with direct search
+                val encodedQuery = Uri.encode(query)
+                val spotifyUri = when (type) {
+                    "artist" -> "spotify://search/artist/$encodedQuery"
+                    "track" -> "spotify://search/track/$encodedQuery"
+                    else -> "spotify://search/all/$encodedQuery"
+                }
+                
+                val spotifyIntent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse(spotifyUri)
+                    setPackage("com.spotify.music")
+                    // Add these flags to ensure direct search
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    // Add search query as extra
+                    putExtra("query", query)
+                    putExtra("android.intent.extra.REFERRER", Uri.parse("android-app://${context.packageName}"))
+                }
+                
+                context.startActivity(spotifyIntent)
+                showToast(context, "Searching Spotify...")
+            } catch (e: NameNotFoundException) {
+                // Spotify is not installed
+                showToast(context, "Spotify is not installed. Opening Play Store...")
+                openPlayStore(context, "com.spotify.music")
+            } catch (e: ActivityNotFoundException) {
+                // Fallback to browser with direct search
+                try {
+                    val browserIntent = Intent(Intent.ACTION_VIEW).apply {
+                        val encodedQuery = Uri.encode(query)
+                        // Use the search results URL directly
+                        data = Uri.parse("https://open.spotify.com/search/results/$encodedQuery")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(browserIntent)
+                    showToast(context, "Opening Spotify search in browser...")
+                } catch (e: Exception) {
+                    showToast(context, "Couldn't open Spotify. Please try again.")
+                }
+            }
+        }
     }
 } 

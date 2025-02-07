@@ -9,6 +9,7 @@
         <package android:name="com.google.android.youtube" />
         <package android:name="com.instagram.android" />
         <package android:name="com.google.android.apps.meetings" />
+        <package android:name="com.spotify.music" />
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />

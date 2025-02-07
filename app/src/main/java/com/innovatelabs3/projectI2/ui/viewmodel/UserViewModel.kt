@@ -172,6 +172,16 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't find a valid Google Meet code in your request.")
                             }
                         }
+                        is QueryType.SearchSpotify -> {
+                            val content = systemQueries.extractSpotifySearchContent(command)
+                            if (content.query.isNotEmpty()) {
+                                GenericUtils.searchSpotify(context, content.query, content.type)
+                                val typeMsg = if (content.type == "artist") "artist" else "track"
+                                addAssistantMessage("Searching Spotify for $typeMsg: '${content.query}'")
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand what you want to search for on Spotify.")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {

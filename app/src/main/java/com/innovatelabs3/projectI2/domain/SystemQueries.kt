@@ -14,6 +14,7 @@ sealed class QueryType {
     object SearchYouTube : QueryType()
     object OpenInstagramProfile : QueryType()
     object JoinGoogleMeet : QueryType()
+    object SearchSpotify : QueryType()
 }
 
 class SystemQueries(private val generativeModel: GenerativeModel) {
@@ -41,6 +42,11 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val meetingCode: String
     )
 
+    data class SpotifySearchContent(
+        val query: String,
+        val type: String = "track" // "track" or "artist"
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -57,6 +63,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             SEARCH_YOUTUBE - if asking to search or watch videos on YouTube
             OPEN_INSTAGRAM - if asking to open or view someone's Instagram profile
             JOIN_MEET - if asking to join or open a Google Meet meeting
+            SEARCH_SPOTIFY - if asking to search or play music on Spotify
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -79,6 +86,10 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Join Google Meet abc-defg-hij" -> JOIN_MEET
             "Open Meet meeting code xyz-123" -> JOIN_MEET
             "Take me to Google Meet abcdefghij" -> JOIN_MEET
+            "Play Shape of You on Spotify" -> SEARCH_SPOTIFY
+            "Find Ed Sheeran songs on Spotify" -> SEARCH_SPOTIFY
+            "Search for Taylor Swift on Spotify" -> SEARCH_SPOTIFY
+            "Show me Coldplay tracks" -> SEARCH_SPOTIFY
             
             Query: "$query"
         """.trimIndent()
@@ -94,6 +105,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "IDENTITY_QUERY" -> QueryType.Identity
             "OPEN_INSTAGRAM" -> QueryType.OpenInstagramProfile
             "JOIN_MEET" -> QueryType.JoinGoogleMeet
+            "SEARCH_SPOTIFY" -> QueryType.SearchSpotify
             else -> QueryType.General
         }
     }
@@ -288,6 +300,38 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             GoogleMeetContent(code)
         } catch (e: Exception) {
             GoogleMeetContent("")
+        }
+    }
+
+    suspend fun extractSpotifySearchContent(query: String): SpotifySearchContent {
+        val spotifyPrompt = """
+            Extract search query and type for Spotify from: "$query"
+            Reply in format:
+            TYPE:[track/artist]
+            QUERY:[search term]
+            If searching for a specific song, use 'track'. If searching for an artist, use 'artist'.
+            Keep it brief.
+        """.trimIndent()
+
+        val response = chat.sendMessage(spotifyPrompt).text?.trim() ?: return SpotifySearchContent("")
+        
+        return try {
+            val type = response.lineSequence()
+                .firstOrNull { it.startsWith("TYPE:") }
+                ?.substringAfter("TYPE:")
+                ?.trim()
+                ?.lowercase()
+                ?: "track"
+
+            val searchQuery = response.lineSequence()
+                .firstOrNull { it.startsWith("QUERY:") }
+                ?.substringAfter("QUERY:")
+                ?.trim()
+                ?: ""
+            
+            SpotifySearchContent(searchQuery, type)
+        } catch (e: Exception) {
+            SpotifySearchContent("")
         }
     }
 
