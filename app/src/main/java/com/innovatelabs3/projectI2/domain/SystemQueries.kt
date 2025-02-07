@@ -13,6 +13,7 @@ sealed class QueryType {
     object ShowDirections : QueryType()
     object SearchYouTube : QueryType()
     object OpenInstagramProfile : QueryType()
+    object JoinGoogleMeet : QueryType()
 }
 
 class SystemQueries(private val generativeModel: GenerativeModel) {
@@ -36,6 +37,10 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
         val username: String
     )
 
+    data class GoogleMeetContent(
+        val meetingCode: String
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -48,7 +53,10 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             SEARCH_YOUTUBE - if asking to search or watch videos on YouTube
             IDENTITY_QUERY - if asking about who I am or my capabilities
             GENERAL_QUERY - for any other topics
+            SHOW_DIRECTIONS - if asking for directions or navigation to a place
+            SEARCH_YOUTUBE - if asking to search or watch videos on YouTube
             OPEN_INSTAGRAM - if asking to open or view someone's Instagram profile
+            JOIN_MEET - if asking to join or open a Google Meet meeting
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -68,6 +76,9 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "Show me John's Instagram profile" -> OPEN_INSTAGRAM
             "Open Instagram profile of taylorswift" -> OPEN_INSTAGRAM
             "Take me to @username on Instagram" -> OPEN_INSTAGRAM
+            "Join Google Meet abc-defg-hij" -> JOIN_MEET
+            "Open Meet meeting code xyz-123" -> JOIN_MEET
+            "Take me to Google Meet abcdefghij" -> JOIN_MEET
             
             Query: "$query"
         """.trimIndent()
@@ -82,6 +93,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             "SEARCH_YOUTUBE" -> QueryType.SearchYouTube
             "IDENTITY_QUERY" -> QueryType.Identity
             "OPEN_INSTAGRAM" -> QueryType.OpenInstagramProfile
+            "JOIN_MEET" -> QueryType.JoinGoogleMeet
             else -> QueryType.General
         }
     }
@@ -253,6 +265,29 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             InstagramProfileContent(username)
         } catch (e: Exception) {
             InstagramProfileContent("")
+        }
+    }
+
+    suspend fun extractGoogleMeetCode(query: String): GoogleMeetContent {
+        val meetPrompt = """
+            Extract the Google Meet meeting code from: "$query"
+            Reply in format:
+            CODE:[meeting code]
+            Keep it brief. Include any hyphens or special characters.
+        """.trimIndent()
+
+        val response = chat.sendMessage(meetPrompt).text?.trim() ?: return GoogleMeetContent("")
+        
+        return try {
+            val code = response.lineSequence()
+                .firstOrNull { it.startsWith("CODE:") }
+                ?.substringAfter("CODE:")
+                ?.trim()
+                ?: ""
+            
+            GoogleMeetContent(code)
+        } catch (e: Exception) {
+            GoogleMeetContent("")
         }
     }
 

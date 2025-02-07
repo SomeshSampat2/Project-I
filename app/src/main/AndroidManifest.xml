@@ -8,6 +8,7 @@
         <package android:name="com.google.android.apps.maps" />
         <package android:name="com.google.android.youtube" />
         <package android:name="com.instagram.android" />
+        <package android:name="com.google.android.apps.meetings" />
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />

@@ -241,5 +241,41 @@ class GenericUtils {
                 }
             }
         }
+
+        fun joinGoogleMeet(context: Context, meetingCode: String) {
+            try {
+                // First check if Google Meet is installed
+                context.packageManager.getPackageInfo("com.google.android.apps.meetings", 0)
+                
+                // Clean the meeting code (remove spaces, hyphens, etc)
+                val cleanCode = meetingCode.replace(Regex("[^a-zA-Z0-9]"), "")
+                
+                // Create the Meet intent
+                val meetIntent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://meet.google.com/$cleanCode")
+                    setPackage("com.google.android.apps.meetings")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                
+                context.startActivity(meetIntent)
+                showToast(context, "Opening Google Meet...")
+            } catch (e: NameNotFoundException) {
+                // Google Meet is not installed
+                showToast(context, "Google Meet is not installed. Opening Play Store...")
+                openPlayStore(context, "com.google.android.apps.meetings")
+            } catch (e: ActivityNotFoundException) {
+                // Fallback to browser
+                try {
+                    val browserIntent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse("https://meet.google.com/$meetingCode")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(browserIntent)
+                    showToast(context, "Opening Google Meet in browser...")
+                } catch (e: Exception) {
+                    showToast(context, "Couldn't open Google Meet. Please try again.")
+                }
+            }
+        }
     }
 } 
