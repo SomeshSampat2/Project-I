@@ -22,6 +22,7 @@ sealed class QueryType {
     object BookUber : QueryType()
     object SearchProduct : QueryType()
     object SaveContact : QueryType()
+    object SearchFiles : QueryType()
 }
 
 class SystemQueries {
@@ -113,6 +114,7 @@ class SystemQueries {
             BOOK_UBER - if asking to book an Uber ride or get a cab to somewhere
             SEARCH_PRODUCT - if asking to search for a product on Flipkart or Amazon
             SAVE_CONTACT - if asking to save or add a contact/phone number
+            SEARCH_FILES - if asking to find or search for files, documents, photos, or videos on the device
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -148,6 +150,9 @@ class SystemQueries {
             "Save John's number 9876543210" -> SAVE_CONTACT
             "Add contact Mary with phone 1234567890" -> SAVE_CONTACT
             "Save this number 9898989898 as Dad" -> SAVE_CONTACT
+            "Find files named project" -> SEARCH_FILES
+            "Search for photos with name vacation" -> SEARCH_FILES
+            "Look for documents containing report" -> SEARCH_FILES
             
             Query: "$query"
         """.trimIndent()
@@ -167,6 +172,7 @@ class SystemQueries {
             "BOOK_UBER" -> QueryType.BookUber
             "SEARCH_PRODUCT" -> QueryType.SearchProduct
             "SAVE_CONTACT" -> QueryType.SaveContact
+            "SEARCH_FILES" -> QueryType.SearchFiles
             else -> QueryType.General
         }
     }
@@ -348,6 +354,15 @@ class SystemQueries {
         } catch (e: Exception) {
             WhatsAppMessageContent()
         }
+    }
+
+    suspend fun extractSearchQuery(query: String): String {
+        val searchPrompt = """
+            Extract the search term from: "$query"
+            Reply with just the search term, keep it brief.
+        """.trimIndent()
+
+        return analyzerChat.sendMessage(searchPrompt).text?.trim() ?: ""
     }
 
     data class NotificationContent(

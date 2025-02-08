@@ -41,6 +41,13 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.innovatelabs3.projectI2.utils.GenericUtils
 import androidx.compose.runtime.rememberCoroutineScope
 import android.app.AlertDialog
+import kotlinx.coroutines.launch
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.os.Environment
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 
 class MainActivity : ComponentActivity() {
     private val viewModel: UserViewModel by viewModels()
@@ -52,8 +59,62 @@ class MainActivity : ComponentActivity() {
         if (allGranted) {
             viewModel.retryLastOperation()
         } else {
-            // Show message if permission was denied
-            GenericUtils.showToast(this, "Contact permissions are required to save contacts")
+            showPermissionRationaleDialog(
+                getRequiredPermissions(),
+                "These permissions are required to access your files. Would you like to grant them?"
+            )
+        }
+    }
+
+    private val manageAllFilesLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (isManageExternalStoragePermissionGranted()) {
+            viewModel.retryLastOperation()
+        } else {
+            GenericUtils.showToast(this, "All files access permission denied. Some features may be limited.")
+        }
+    }
+
+    private fun getRequiredPermissions(): Array<String> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14
+            arrayOf(
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO,
+                Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13
+            arrayOf(
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO
+            )
+        } else {
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+    }
+
+    private fun isManageExternalStoragePermissionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            true
+        }
+    }
+
+    private fun requestManageAllFilesPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:${applicationContext.packageName}")
+                }
+                manageAllFilesLauncher.launch(intent)
+            } catch (e: Exception) {
+                manageAllFilesLauncher.launch(
+                    Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                )
+            }
         }
     }
 
@@ -65,44 +126,37 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val viewModel = viewModel<UserViewModel>()
                     MainScreen(viewModel)
                 }
             }
+        }
 
-            // Observe permission requests
-            LaunchedEffect(Unit) {
+        // Fixed lifecycle scope implementation
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.requestPermission.collect { permission ->
-                    when (permission) {
-                        "contacts" -> {
-                            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS) ||
-                                shouldShowRequestPermissionRationale(Manifest.permission.WRITE_CONTACTS)) {
-                                // Show in-app rationale dialog and then request permission
-                                showPermissionRationaleDialog(
-                                    onConfirm = {
-                                        requestPermissionLauncher.launch(
-                                            arrayOf(
-                                                Manifest.permission.READ_CONTACTS,
-                                                Manifest.permission.WRITE_CONTACTS
-                                            )
-                                        )
-                                    },
-                                    onDismiss = {
-                                        GenericUtils.showToast(this@MainActivity, 
-                                            "Contact permissions are needed to save contacts")
-                                    }
-                                )
-                            } else {
-                                // Directly request permission
-                                requestPermissionLauncher.launch(
-                                    arrayOf(
-                                        Manifest.permission.READ_CONTACTS,
-                                        Manifest.permission.WRITE_CONTACTS
+                    permission?.let {
+                        when (permission) {
+                            "storage" -> {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                                    !isManageExternalStoragePermissionGranted()) {
+                                    showPermissionRationaleDialog(
+                                        getRequiredPermissions(),
+                                        "To access all files, this app needs special permission. Would you like to grant it?"
                                     )
-                                )
+                                } else {
+                                    requestPermissionLauncher.launch(getRequiredPermissions())
+                                }
                             }
-                            viewModel.clearPermissionRequest()
+                            "notification" -> {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    requestPermissionLauncher.launch(
+                                        arrayOf(Manifest.permission.POST_NOTIFICATIONS)
+                                    )
+                                }
+                            }
                         }
+                        viewModel.clearPermissionRequest()
                     }
                 }
             }
@@ -110,14 +164,23 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun showPermissionRationaleDialog(
-        onConfirm: () -> Unit,
-        onDismiss: () -> Unit
+        permissions: Array<String>,
+        message: String
     ) {
         AlertDialog.Builder(this)
             .setTitle("Permission Required")
-            .setMessage("Contact permission is needed to save contacts. Would you like to grant this permission?")
-            .setPositiveButton("Yes") { _, _ -> onConfirm() }
-            .setNegativeButton("No") { _, _ -> onDismiss() }
+            .setMessage(message)
+            .setPositiveButton("Grant") { _, _ ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                    permissions.contains(Manifest.permission.MANAGE_EXTERNAL_STORAGE)) {
+                    requestManageAllFilesPermission()
+                } else {
+                    requestPermissionLauncher.launch(permissions)
+                }
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                GenericUtils.showToast(this, "Permission denied. Cannot proceed with the operation.")
+            }
             .setCancelable(false)
             .show()
     }
