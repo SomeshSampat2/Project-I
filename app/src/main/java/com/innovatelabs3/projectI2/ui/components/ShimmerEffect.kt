@@ -24,10 +24,11 @@ import com.innovatelabs3.projectI2.ui.theme.OpenSansFont
 import com.innovatelabs3.projectI2.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 import androidx.compose.animation.ExperimentalAnimationApi
+import com.innovatelabs3.projectI2.domain.QueryType
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun ShimmerEffect(isWebSearch: Boolean = false) {
+fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType.General) {
     val shimmerColors = listOf(
         Color.LightGray.copy(alpha = 0.3f),
         Color.LightGray.copy(alpha = 0.5f),
@@ -66,22 +67,49 @@ fun ShimmerEffect(isWebSearch: Boolean = false) {
         )
     }
 
-    // Loading message animation
-    val loadingMessages = remember {
-        if (isWebSearch) {
-            listOf(
-                "Searching the web",
-                "Gathering information",
-                "Processing results",
+    // Loading message animation based on query type
+    val loadingMessages = remember(queryType) {
+        when (queryType) {
+            is QueryType.ShowDirections,
+            is QueryType.SearchYouTube,
+            is QueryType.SearchSpotify,
+            is QueryType.BookUber,
+            is QueryType.SearchProduct,
+            is QueryType.SendWhatsAppMessage,
+            is QueryType.OpenInstagramProfile,
+            is QueryType.JoinGoogleMeet -> listOf(
+                "Processing your request",
+                "Finding relevant app",
+                "Preparing to launch",
                 "Almost ready"
             )
-        } else {
-            listOf(
-                "Thinking",
-                "Analyzing",
-                "Processing",
+            is QueryType.SaveContact -> listOf(
+                "Preparing contact details",
+                "Formatting information",
+                "Saving to contacts",
+                "Almost done"
+            )
+            is QueryType.ShowNotification, is QueryType.ShowToast, is QueryType.ShowSnackbar -> listOf(
+                "Processing your request",
+                "Preparing message",
+                "Setting up display",
                 "Almost ready"
             )
+            else -> if (isWebSearch) {
+                listOf(
+                    "Searching the web",
+                    "Gathering information",
+                    "Processing results",
+                    "Almost ready"
+                )
+            } else {
+                listOf(
+                    "Thinking",
+                    "Analyzing",
+                    "Processing",
+                    "Almost ready"
+                )
+            }
         }
     }
     

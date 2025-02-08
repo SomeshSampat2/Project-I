@@ -66,6 +66,9 @@ class UserViewModel : ViewModel() {
 
     private var lastOperation: (() -> Unit)? = null
 
+    private val _lastQueryType = MutableStateFlow<QueryType>(QueryType.General)
+    val lastQueryType: StateFlow<QueryType> = _lastQueryType.asStateFlow()
+
     fun shouldAnimateMessage(timestamp: Long): Boolean {
         return if (timestamp !in animatedMessages) {
             animatedMessages.add(timestamp)
@@ -91,7 +94,12 @@ class UserViewModel : ViewModel() {
                 if (isSearchMode.value) {
                     handleSearchQuery(command)
                 } else {
-                    when (systemQueries.analyzeQueryType(command)) {
+                    val type = systemQueries.analyzeQueryType(command)
+                    // Update the query type first
+                    _lastQueryType.value = type
+                    
+                    // Then handle the query
+                    when (type) {
                         is QueryType.ShowToast -> {
                             val message = systemQueries.extractToastMessage(command)
                             _showToast.value = message
@@ -113,10 +121,6 @@ class UserViewModel : ViewModel() {
                         }
                         is QueryType.Identity -> {
                             addAssistantMessage(systemQueries.getIdentityResponse())
-                        }
-                        is QueryType.General -> {
-                            val response = systemQueries.handleGeneralQuery(command)
-                            addAssistantMessage(response)
                         }
                         is QueryType.SendWhatsAppMessage -> {
                             val content = systemQueries.extractWhatsAppMessageContent(command)
@@ -232,6 +236,10 @@ class UserViewModel : ViewModel() {
                             } else {
                                 addAssistantMessage("Sorry, I couldn't understand the contact details. Please provide both name and phone number.")
                             }
+                        }
+                        else -> {
+                            val response = systemQueries.handleGeneralQuery(command)
+                            addAssistantMessage(response)
                         }
                     }
                 }
