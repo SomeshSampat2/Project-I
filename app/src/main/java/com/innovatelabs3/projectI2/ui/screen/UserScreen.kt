@@ -58,6 +58,7 @@ fun UserScreen(viewModel: UserViewModel) {
     val placeholderText by remember {
         mutableStateOf(WelcomePrompts.getRandomPrompt())
     }
+    val lastQueryType by viewModel.lastQueryType.collectAsState()
 
     LaunchedEffect(chatMessages.size) {
         if (chatMessages.isNotEmpty()) {
@@ -203,7 +204,10 @@ fun UserScreen(viewModel: UserViewModel) {
 
                     item {
                         if (isLoading) {
-                            ShimmerEffect(isWebSearch = isSearchMode)
+                            ShimmerEffect(
+                                isWebSearch = isSearchMode,
+                                queryType = lastQueryType
+                            )
                         }
                     }
                 }
