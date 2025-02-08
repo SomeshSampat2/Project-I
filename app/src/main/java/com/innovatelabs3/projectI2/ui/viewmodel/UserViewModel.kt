@@ -36,7 +36,7 @@ class UserViewModel : ViewModel() {
         )
     )
 
-    private val systemQueries = SystemQueries(generativeModel)
+    private val systemQueries = SystemQueries()
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
