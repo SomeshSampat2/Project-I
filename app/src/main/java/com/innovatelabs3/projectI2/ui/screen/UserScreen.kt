@@ -40,6 +40,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.graphics.graphicsLayer
 import com.innovatelabs3.projectI2.data.model.SearchSource
+import com.innovatelabs3.projectI2.domain.QueryType
+import com.innovatelabs3.projectI2.ui.components.FileSearchResults
 import com.innovatelabs3.projectI2.ui.components.SearchSourcesRow
 import com.innovatelabs3.projectI2.util.WelcomePrompts
 import com.innovatelabs3.projectI2.ui.components.SuggestionsCard
@@ -55,6 +57,7 @@ fun UserScreen(viewModel: UserViewModel) {
     val listState = rememberLazyListState()
     val isSearchMode by viewModel.searchMode.collectAsState()
     val searchSources by viewModel.searchSources.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
     val placeholderText by remember {
         mutableStateOf(WelcomePrompts.getRandomPrompt())
     }
@@ -182,23 +185,26 @@ fun UserScreen(viewModel: UserViewModel) {
                     contentPadding = PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(chatMessages.chunked(2)) { messagePair ->
-                        // User message
-                        messagePair.firstOrNull()?.let { userMessage ->
-                            ChatMessageItem(
-                                message = userMessage,
-                                viewModel = viewModel
-                            )
-                        }
-
-                        // Assistant message with sources if available
-                        messagePair.getOrNull(1)?.let { assistantMessage ->
-                            ChatMessageItem(
-                                message = assistantMessage,
-                                viewModel = viewModel,
-                                showSources = searchSources.isNotEmpty() && messagePair.first().content == chatMessages[chatMessages.lastIndex - 1].content,
-                                sources = searchSources
-                            )
+                    items(chatMessages.size) { index ->
+                        val message = chatMessages[index]
+                        Column {
+                            ChatMessageItem(message, viewModel)
+                            
+                            // Show search results after assistant's message
+                            if (!message.isUser && 
+                                lastQueryType == QueryType.SearchFiles && 
+                                searchResults.isNotEmpty() && 
+                                index == chatMessages.lastIndex) {
+                                FileSearchResults(results = searchResults)
+                            }
+                            
+                            // Show web search results if in search mode
+                            if (!message.isUser && 
+                                isSearchMode && 
+                                searchSources.isNotEmpty() && 
+                                index == chatMessages.lastIndex) {
+                                SearchSourcesRow(sources = searchSources)
+                            }
                         }
                     }
 

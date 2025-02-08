@@ -117,14 +117,101 @@ object FileSearchUtils {
     }
 
     private fun searchDocuments(context: Context, query: String, results: MutableList<FileSearchResult>) {
+        // Define projections
         val projection = arrayOf(
             MediaStore.Files.FileColumns.DISPLAY_NAME,
             MediaStore.Files.FileColumns.DATA,
             MediaStore.Files.FileColumns.MIME_TYPE
         )
 
-        val mimeTypes = arrayOf(
+        // Separate PDF search from other documents
+        searchPdfFiles(context, query, results, projection)
+        searchOtherDocuments(context, query, results, projection)
+    }
+
+    private fun searchPdfFiles(
+        context: Context, 
+        query: String, 
+        results: MutableList<FileSearchResult>,
+        projection: Array<String>
+    ) {
+        val selection = """
+            ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE ? AND 
+            (${MediaStore.Files.FileColumns.MIME_TYPE} = ? OR 
+             ${MediaStore.Files.FileColumns.MIME_TYPE} = ? OR
+             ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE ?)
+        """.trimIndent()
+
+        val selectionArgs = arrayOf(
+            "%$query%",
             "application/pdf",
+            "application/x-pdf",
+            "%.pdf"
+        )
+
+        try {
+            context.contentResolver.query(
+                MediaStore.Files.getContentUri("external"),
+                projection,
+                selection,
+                selectionArgs,
+                null
+            )?.use { cursor ->
+                val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
+                
+                while (cursor.moveToNext()) {
+                    val name = cursor.getString(nameColumn)
+                    val path = cursor.getString(pathColumn)
+                    
+                    // Additional check for PDF extension
+                    if (name.lowercase().endsWith(".pdf")) {
+                        results.add(FileSearchResult(name, path, FileType.PDF))
+                    }
+                }
+            }
+
+            // Also search in common PDF directories
+            val commonPdfDirs = listOf(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                File(Environment.getExternalStorageDirectory(), "PDFs")
+            )
+
+            commonPdfDirs.forEach { dir ->
+                if (dir.exists() && dir.isDirectory) {
+                    searchDirectoryForPdfs(dir, query, results)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun searchDirectoryForPdfs(directory: File, query: String, results: MutableList<FileSearchResult>) {
+        directory.listFiles()?.forEach { file ->
+            if (file.isDirectory) {
+                searchDirectoryForPdfs(file, query, results)
+            } else if (file.name.lowercase().endsWith(".pdf") && 
+                      file.name.lowercase().contains(query.lowercase())) {
+                results.add(
+                    FileSearchResult(
+                        name = file.name,
+                        path = file.absolutePath,
+                        type = FileType.PDF
+                    )
+                )
+            }
+        }
+    }
+
+    private fun searchOtherDocuments(
+        context: Context, 
+        query: String, 
+        results: MutableList<FileSearchResult>,
+        projection: Array<String>
+    ) {
+        val mimeTypes = arrayOf(
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "text/plain"
@@ -169,16 +256,6 @@ object FileSearchUtils {
             return "I couldn't find any files matching your search."
         }
 
-        val groupedResults = results.groupBy { it.type }
-        return buildString {
-            appendLine("Here's what I found:")
-            groupedResults.forEach { (type, files) ->
-                appendLine("\n**${type.name.lowercase().capitalize()} files:**")
-                files.forEach { file ->
-                    appendLine("- ${file.name}")
-                    appendLine("  Location: ${file.path}")
-                }
-            }
-        }
+        return "Here are the files I found. They are displayed below."
     }
 } 

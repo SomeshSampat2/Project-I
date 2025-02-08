@@ -193,7 +193,6 @@ fun MainScreen(viewModel: UserViewModel) {
     val showSnackbar by viewModel.showSnackbar.collectAsState()
     val showNotification by viewModel.showNotification.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val notificationManager = remember { NotificationManagerCompat.from(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
