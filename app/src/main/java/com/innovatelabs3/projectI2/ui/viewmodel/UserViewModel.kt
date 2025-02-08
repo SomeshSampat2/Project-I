@@ -21,6 +21,12 @@ import com.innovatelabs3.projectI2.domain.QueryType
 import com.innovatelabs3.projectI2.utils.GenericUtils
 import com.innovatelabs3.projectI2.ProjectIApplication
 import com.innovatelabs3.projectI2.utils.ContactUtils
+import com.innovatelabs3.projectI2.utils.FileSearchUtils
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class UserViewModel : ViewModel() {
     private val context = ProjectIApplication.getContext()
@@ -237,6 +243,28 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand the contact details. Please provide both name and phone number.")
                             }
                         }
+                        is QueryType.SearchFiles -> {
+                            val searchTerm = systemQueries.extractSearchQuery(command)
+                            if (searchTerm.isNotEmpty()) {
+                                lastOperation = {
+                                    viewModelScope.launch {
+                                        val results = FileSearchUtils.searchFiles(context, searchTerm)
+                                        addAssistantMessage(FileSearchUtils.formatSearchResults(results))
+                                    }
+                                }
+                                
+                                if (!checkStoragePermissions()) {
+                                    _requestPermission.value = "storage"
+                                    addAssistantMessage("I need permission to access your files. Please grant the permission when prompted.")
+                                    return@launch
+                                }
+                                
+                                lastOperation?.invoke()
+                                lastOperation = null
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand what you're looking for. Please specify a search term.")
+                            }
+                        }
                         else -> {
                             val response = systemQueries.handleGeneralQuery(command)
                             addAssistantMessage(response)
@@ -339,5 +367,20 @@ class UserViewModel : ViewModel() {
 
     private fun addAssistantMessage(message: String) {
         _chatMessages.value = _chatMessages.value + ChatMessage(message, false)
+    }
+
+    private fun checkStoragePermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        }
     }
 } 
