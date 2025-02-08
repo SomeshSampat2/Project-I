@@ -182,7 +182,6 @@ class GenericUtils {
                 context.packageManager.getPackageInfo("com.google.android.youtube", 0)
                 
                 // Create the YouTube search intent with the correct URL scheme
-                val encodedQuery = Uri.encode(query)
                 val youtubeIntent = Intent(Intent.ACTION_SEARCH).apply {
                     setPackage("com.google.android.youtube")
                     putExtra("query", query)

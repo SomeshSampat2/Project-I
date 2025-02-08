@@ -27,6 +27,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.innovatelabs3.projectI2.utils.FileSearchResult
 
 class UserViewModel : ViewModel() {
     private val context = ProjectIApplication.getContext()
@@ -74,6 +75,10 @@ class UserViewModel : ViewModel() {
 
     private val _lastQueryType = MutableStateFlow<QueryType>(QueryType.General)
     val lastQueryType: StateFlow<QueryType> = _lastQueryType.asStateFlow()
+
+    // Add a new state flow for search results
+    private val _searchResults = MutableStateFlow<List<FileSearchResult>>(emptyList())
+    val searchResults: StateFlow<List<FileSearchResult>> = _searchResults.asStateFlow()
 
     fun shouldAnimateMessage(timestamp: Long): Boolean {
         return if (timestamp !in animatedMessages) {
@@ -249,6 +254,7 @@ class UserViewModel : ViewModel() {
                                 lastOperation = {
                                     viewModelScope.launch {
                                         val results = FileSearchUtils.searchFiles(context, searchTerm)
+                                        _searchResults.value = results
                                         addAssistantMessage(FileSearchUtils.formatSearchResults(results))
                                     }
                                 }
