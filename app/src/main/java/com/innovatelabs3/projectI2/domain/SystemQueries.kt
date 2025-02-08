@@ -1,6 +1,10 @@
 package com.innovatelabs3.projectI2.domain
 
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.BlockThreshold
+import com.google.ai.client.generativeai.type.HarmCategory
+import com.google.ai.client.generativeai.type.SafetySetting
+import com.innovatelabs3.projectI2.BuildConfig
 
 sealed class QueryType {
     object ShowToast : QueryType()
@@ -20,8 +24,33 @@ sealed class QueryType {
     object SaveContact : QueryType()
 }
 
-class SystemQueries(private val generativeModel: GenerativeModel) {
-    private val chat = generativeModel.startChat()
+class SystemQueries {
+    // For quick analysis and simple extractions
+    private val analyzerModel = GenerativeModel(
+        modelName = "gemini-1.5-flash-8b",
+        apiKey = BuildConfig.GEMINI_API_KEY,
+        safetySettings = listOf(
+            SafetySetting(harmCategory = HarmCategory.HARASSMENT, threshold = BlockThreshold.NONE),
+            SafetySetting(harmCategory = HarmCategory.HATE_SPEECH, threshold = BlockThreshold.NONE),
+            SafetySetting(harmCategory = HarmCategory.SEXUALLY_EXPLICIT, threshold = BlockThreshold.NONE),
+            SafetySetting(harmCategory = HarmCategory.DANGEROUS_CONTENT, threshold = BlockThreshold.NONE)
+        )
+    )
+
+    // For detailed responses and complex content
+    private val responseModel = GenerativeModel(
+        modelName = "gemini-1.5-flash",
+        apiKey = BuildConfig.GEMINI_API_KEY,
+        safetySettings = listOf(
+            SafetySetting(harmCategory = HarmCategory.HARASSMENT, threshold = BlockThreshold.NONE),
+            SafetySetting(harmCategory = HarmCategory.HATE_SPEECH, threshold = BlockThreshold.NONE),
+            SafetySetting(harmCategory = HarmCategory.SEXUALLY_EXPLICIT, threshold = BlockThreshold.NONE),
+            SafetySetting(harmCategory = HarmCategory.DANGEROUS_CONTENT, threshold = BlockThreshold.NONE)
+        )
+    )
+
+    private val analyzerChat = analyzerModel.startChat()
+    private val responseChat = responseModel.startChat()
 
     data class WhatsAppMessageContent(
         val contactName: String = "",
@@ -123,7 +152,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             Query: "$query"
         """.trimIndent()
 
-        return when (chat.sendMessage(analysisPrompt).text?.trim()) {
+        return when (analyzerChat.sendMessage(analysisPrompt).text?.trim()) {
             "SHOW_TOAST" -> QueryType.ShowToast
             "SHOW_SNACKBAR" -> QueryType.ShowSnackbar
             "SHOW_NOTIFICATION" -> QueryType.ShowNotification
@@ -150,7 +179,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             MESSAGE: [notification message]
         """.trimIndent()
         
-        val response = chat.sendMessage(notificationPrompt).text?.trim() ?: return NotificationContent()
+        val response = responseChat.sendMessage(notificationPrompt).text?.trim() ?: return NotificationContent()
         
         return try {
             val lines = response.lines()
@@ -167,227 +196,41 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
     }
 
     suspend fun extractToastMessage(query: String): String {
-        val toastPrompt = """
-            Extract the message to show in the toast from this request: "$query"
-            Respond with just the message, no additional text.
-        """.trimIndent()
-        
-        return chat.sendMessage(toastPrompt).text?.trim() ?: "Toast message"
+        return analyzerChat.sendMessage("Extract toast message from: '$query'").text?.trim() ?: "Toast message"
     }
 
     suspend fun extractSnackbarMessage(query: String): String {
-        val snackbarPrompt = """
-            Extract the message to show in the snackbar from this request: "$query"
-            Respond with just the message, no additional text.
-        """.trimIndent()
-        
-        return chat.sendMessage(snackbarPrompt).text?.trim() ?: "Snackbar message"
-    }
-
-    fun getIdentityResponse(): String {
-        return """
-            Let me introduce myself! 
-            
-            I'm <b>Project I</b>, an AI assistant developed by <b>Somesh Sampat</b> at <b>Innovate Labs</b> in <b>India</b>. 
-            I'm built on top of Google's Gemini model to help users with various tasks and queries.
-            
-            While I leverage Gemini's powerful language understanding capabilities, my interface and specific functionalities 
-            were custom-developed to provide a unique and helpful experience.
-            
-            Is there anything specific you'd like to know about my capabilities?
-        """.trimIndent()
-    }
-
-    suspend fun handleGeneralQuery(query: String): String {
-        return chat.sendMessage(query).text ?: "Couldn't process request."
-    }
-
-    suspend fun extractWhatsAppMessageContent(query: String): WhatsAppMessageContent {
-        val messagePrompt = """
-            Extract contact name/phone number and message from: "$query"
-            If number is given, format it with +91.
-            Reply in format:
-            TARGET:[contact name or phone number]
-            MSG:[message]
-            Keep it brief.
-        """.trimIndent()
-
-        val response = chat.sendMessage(messagePrompt).text?.trim() ?: return WhatsAppMessageContent()
-        
-        return try {
-            val target = response.lineSequence()
-                .firstOrNull { it.startsWith("TARGET:") }
-                ?.substringAfter("TARGET:")
-                ?.trim()
-                ?: ""
-
-            val message = response.lineSequence()
-                .firstOrNull { it.startsWith("MSG:") }
-                ?.substringAfter("MSG:")
-                ?.trim()
-                ?: ""
-
-            // Check if target is a phone number (contains only digits)
-            if (target.replace(Regex("[^0-9]"), "").length >= 10) {
-                // It's a phone number
-                val cleanNumber = target.replace(Regex("[^0-9+]"), "")
-                val formattedNumber = if (cleanNumber.startsWith("+")) cleanNumber else "+91$cleanNumber"
-                WhatsAppMessageContent(phoneNumber = formattedNumber, message = message)
-            } else {
-                // It's a contact name
-                WhatsAppMessageContent(contactName = target, message = message)
-            }
-        } catch (e: Exception) {
-            WhatsAppMessageContent()
-        }
+        return analyzerChat.sendMessage("Extract snackbar message from: '$query'").text?.trim() ?: "Snackbar message"
     }
 
     suspend fun extractDirectionsContent(query: String): DirectionsContent {
-        val directionsPrompt = """
-            Extract the destination from: "$query"
-            Reply in format:
-            DEST:[destination address or place name]
-            Keep it brief and specific.
-        """.trimIndent()
-
-        val response = chat.sendMessage(directionsPrompt).text?.trim() ?: return DirectionsContent("")
-        
-        return try {
-            val destination = response.lineSequence()
-                .firstOrNull { it.startsWith("DEST:") }
-                ?.substringAfter("DEST:")
-                ?.trim()
-                ?: ""
-            
-            DirectionsContent(destination)
-        } catch (e: Exception) {
-            DirectionsContent("")
-        }
+        val response = analyzerChat.sendMessage("Extract destination from: '$query'").text?.trim() ?: return DirectionsContent("")
+        return DirectionsContent(response)
     }
 
     suspend fun extractYouTubeSearchQuery(query: String): YouTubeSearchContent {
-        val searchPrompt = """
-            Extract the search query for YouTube from: "$query"
-            Reply in format:
-            SEARCH:[what to search for]
-            Keep it brief and specific.
-        """.trimIndent()
-
-        val response = chat.sendMessage(searchPrompt).text?.trim() ?: return YouTubeSearchContent("")
-        
-        return try {
-            val searchQuery = response.lineSequence()
-                .firstOrNull { it.startsWith("SEARCH:") }
-                ?.substringAfter("SEARCH:")
-                ?.trim()
-                ?: ""
-            
-            YouTubeSearchContent(searchQuery)
-        } catch (e: Exception) {
-            YouTubeSearchContent("")
-        }
+        val response = analyzerChat.sendMessage("Extract YouTube search query from: '$query'").text?.trim() ?: return YouTubeSearchContent("")
+        return YouTubeSearchContent(response)
     }
 
     suspend fun extractInstagramUsername(query: String): InstagramProfileContent {
-        val usernamePrompt = """
-            Extract Instagram username from: "$query"
-            Reply in format:
-            USER:[username without @ symbol]
-            Keep it brief.
-        """.trimIndent()
-
-        val response = chat.sendMessage(usernamePrompt).text?.trim() ?: return InstagramProfileContent("")
-        
-        return try {
-            val username = response.lineSequence()
-                .firstOrNull { it.startsWith("USER:") }
-                ?.substringAfter("USER:")
-                ?.trim()
-                ?.removePrefix("@")  // Remove @ if present
-                ?: ""
-            
-            InstagramProfileContent(username)
-        } catch (e: Exception) {
-            InstagramProfileContent("")
-        }
+        val response = analyzerChat.sendMessage("Extract Instagram username from: '$query'").text?.trim() ?: return InstagramProfileContent("")
+        return InstagramProfileContent(response.removePrefix("@"))
     }
 
     suspend fun extractGoogleMeetCode(query: String): GoogleMeetContent {
-        val meetPrompt = """
-            Extract the Google Meet meeting code from: "$query"
-            Reply in format:
-            CODE:[meeting code]
-            Keep it brief. Include any hyphens or special characters.
-        """.trimIndent()
-
-        val response = chat.sendMessage(meetPrompt).text?.trim() ?: return GoogleMeetContent("")
-        
-        return try {
-            val code = response.lineSequence()
-                .firstOrNull { it.startsWith("CODE:") }
-                ?.substringAfter("CODE:")
-                ?.trim()
-                ?: ""
-            
-            GoogleMeetContent(code)
-        } catch (e: Exception) {
-            GoogleMeetContent("")
-        }
+        val response = analyzerChat.sendMessage("Extract Google Meet code from: '$query'").text?.trim() ?: return GoogleMeetContent("")
+        return GoogleMeetContent(response)
     }
 
     suspend fun extractSpotifySearchContent(query: String): SpotifySearchContent {
-        val spotifyPrompt = """
-            Extract search query and type for Spotify from: "$query"
-            Reply in format:
-            TYPE:[track/artist]
-            QUERY:[search term]
-            If searching for a specific song, use 'track'. If searching for an artist, use 'artist'.
-            Keep it brief.
-        """.trimIndent()
-
-        val response = chat.sendMessage(spotifyPrompt).text?.trim() ?: return SpotifySearchContent("")
-        
-        return try {
-            val type = response.lineSequence()
-                .firstOrNull { it.startsWith("TYPE:") }
-                ?.substringAfter("TYPE:")
-                ?.trim()
-                ?.lowercase()
-                ?: "track"
-
-            val searchQuery = response.lineSequence()
-                .firstOrNull { it.startsWith("QUERY:") }
-                ?.substringAfter("QUERY:")
-                ?.trim()
-                ?: ""
-            
-            SpotifySearchContent(searchQuery, type)
-        } catch (e: Exception) {
-            SpotifySearchContent("")
-        }
+        val response = analyzerChat.sendMessage("Extract Spotify search query from: '$query'").text?.trim() ?: return SpotifySearchContent("")
+        return SpotifySearchContent(response)
     }
 
     suspend fun extractUberDestination(query: String): UberRideContent {
-        val uberPrompt = """
-            Extract the destination for Uber ride from: "$query"
-            Reply in format:
-            DEST:[destination address or place name]
-            Keep it brief and specific.
-        """.trimIndent()
-
-        val response = chat.sendMessage(uberPrompt).text?.trim() ?: return UberRideContent("")
-        
-        return try {
-            val destination = response.lineSequence()
-                .firstOrNull { it.startsWith("DEST:") }
-                ?.substringAfter("DEST:")
-                ?.trim()
-                ?: ""
-            
-            UberRideContent(destination)
-        } catch (e: Exception) {
-            UberRideContent("")
-        }
+        val response = analyzerChat.sendMessage("Extract Uber destination from: '$query'").text?.trim() ?: return UberRideContent("")
+        return UberRideContent(response)
     }
 
     suspend fun extractProductSearchContent(query: String): ProductSearchContent {
@@ -400,7 +243,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             Keep it brief.
         """.trimIndent()
 
-        val response = chat.sendMessage(searchPrompt).text?.trim() ?: return ProductSearchContent("")
+        val response = responseChat.sendMessage(searchPrompt).text?.trim() ?: return ProductSearchContent("")
         
         return try {
             val platform = response.lineSequence()
@@ -432,7 +275,7 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             Keep it brief.
         """.trimIndent()
 
-        val response = chat.sendMessage(contactPrompt).text?.trim() ?: return ContactSaveContent("", "")
+        val response = responseChat.sendMessage(contactPrompt).text?.trim() ?: return ContactSaveContent("", "")
         
         return try {
             val name = response.lineSequence()
@@ -455,6 +298,55 @@ class SystemQueries(private val generativeModel: GenerativeModel) {
             ContactSaveContent(name, phone)
         } catch (e: Exception) {
             ContactSaveContent("", "")
+        }
+    }
+
+    suspend fun handleGeneralQuery(query: String): String {
+        return responseChat.sendMessage(query).text ?: "Sorry, I couldn't process your request."
+    }
+
+    suspend fun getIdentityResponse(): String {
+        return responseChat.sendMessage("Tell me about yourself as Project I").text ?: "I am Project I, an AI assistant."
+    }
+
+    suspend fun extractWhatsAppMessageContent(query: String): WhatsAppMessageContent {
+        val messagePrompt = """
+            Extract WhatsApp message details from: "$query"
+            craft the message in brief by understanding the intent of user and then make that as the real message that user wants to send
+            Reply in format:
+            CONTACT_NAME:[name]
+            PHONE:[phone number]
+            MESSAGE:[message to send]
+            Keep phone number empty if not directly specified.
+            Keep contact name empty if not specified.
+            Keep it brief.
+        """.trimIndent()
+
+        val response = analyzerChat.sendMessage(messagePrompt).text?.trim() ?: return WhatsAppMessageContent()
+        
+        return try {
+            val contactName = response.lineSequence()
+                .firstOrNull { it.startsWith("CONTACT_NAME:") }
+                ?.substringAfter("CONTACT_NAME:")
+                ?.trim()
+                ?: ""
+
+            val phoneNumber = response.lineSequence()
+                .firstOrNull { it.startsWith("PHONE:") }
+                ?.substringAfter("PHONE:")
+                ?.trim()
+                ?.replace(Regex("[^0-9+]"), "")  // Keep only digits and plus sign
+                ?: ""
+
+            val message = response.lineSequence()
+                .firstOrNull { it.startsWith("MESSAGE:") }
+                ?.substringAfter("MESSAGE:")
+                ?.trim()
+                ?: ""
+            
+            WhatsAppMessageContent(contactName, phoneNumber, message)
+        } catch (e: Exception) {
+            WhatsAppMessageContent()
         }
     }
 
