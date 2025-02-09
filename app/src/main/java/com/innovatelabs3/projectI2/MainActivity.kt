@@ -42,12 +42,7 @@ import com.innovatelabs3.projectI2.utils.GenericUtils
 import androidx.compose.runtime.rememberCoroutineScope
 import android.app.AlertDialog
 import kotlinx.coroutines.launch
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
-import android.os.Environment
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 
 class MainActivity : ComponentActivity() {
     private val viewModel: UserViewModel by viewModels()
@@ -63,16 +58,6 @@ class MainActivity : ComponentActivity() {
                 getRequiredPermissions(),
                 "These permissions are required to access your files. Would you like to grant them?"
             )
-        }
-    }
-
-    private val manageAllFilesLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        if (isManageExternalStoragePermissionGranted()) {
-            viewModel.retryLastOperation()
-        } else {
-            GenericUtils.showToast(this, "All files access permission denied. Some features may be limited.")
         }
     }
 
@@ -101,29 +86,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun isManageExternalStoragePermissionGranted(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
-        } else {
-            true
-        }
-    }
-
-    private fun requestManageAllFilesPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try {
-                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
-                    data = Uri.parse("package:${applicationContext.packageName}")
-                }
-                manageAllFilesLauncher.launch(intent)
-            } catch (e: Exception) {
-                manageAllFilesLauncher.launch(
-                    Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                )
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -144,15 +106,7 @@ class MainActivity : ComponentActivity() {
                     permission?.let {
                         when (permission) {
                             "storage" -> {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-                                    !isManageExternalStoragePermissionGranted()) {
-                                    showPermissionRationaleDialog(
-                                        getRequiredPermissions(),
-                                        "To access all files, this app needs special permission. Would you like to grant it?"
-                                    )
-                                } else {
-                                    requestPermissionLauncher.launch(getRequiredPermissions())
-                                }
+                                requestPermissionLauncher.launch(getRequiredPermissions())
                             }
                             "notification" -> {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -183,12 +137,7 @@ class MainActivity : ComponentActivity() {
             .setTitle("Permission Required")
             .setMessage(message)
             .setPositiveButton("Grant") { _, _ ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-                    permissions.contains(Manifest.permission.MANAGE_EXTERNAL_STORAGE)) {
-                    requestManageAllFilesPermission()
-                } else {
-                    requestPermissionLauncher.launch(permissions)
-                }
+                requestPermissionLauncher.launch(permissions)
             }
             .setNegativeButton("Cancel") { _, _ ->
                 GenericUtils.showToast(this, "Permission denied. Cannot proceed with the operation.")
