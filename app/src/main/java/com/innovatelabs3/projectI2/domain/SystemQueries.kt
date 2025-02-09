@@ -23,6 +23,7 @@ sealed class QueryType {
     object SearchProduct : QueryType()
     object SaveContact : QueryType()
     object SearchFiles : QueryType()
+    object SendEmail : QueryType()
 }
 
 class SystemQueries {
@@ -100,6 +101,13 @@ class SystemQueries {
         val recipientName: String = "Recipient"
     )
 
+    data class EmailContent(
+        val to: String,
+        val subject: String = "",
+        val body: String = "",
+        val isHtml: Boolean = false
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -121,6 +129,7 @@ class SystemQueries {
             SEARCH_PRODUCT - if asking to search for a product on Flipkart or Amazon
             SAVE_CONTACT - if asking to save or add a contact/phone number
             SEARCH_FILES - if asking to find or search for files, documents, photos, or videos on the device
+            SEND_EMAIL - if asking to send an email
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -159,6 +168,7 @@ class SystemQueries {
             "Find files named project" -> SEARCH_FILES
             "Search for photos with name vacation" -> SEARCH_FILES
             "Look for documents containing report" -> SEARCH_FILES
+            "Send mail to john@gmail.com inviting him for today's meeting at 4 PM" -> SEND_EMAIL
             
             Query: "$query"
         """.trimIndent()
@@ -179,6 +189,7 @@ class SystemQueries {
             "SEARCH_PRODUCT" -> QueryType.SearchProduct
             "SAVE_CONTACT" -> QueryType.SaveContact
             "SEARCH_FILES" -> QueryType.SearchFiles
+            "SEND_EMAIL" -> QueryType.SendEmail
             else -> QueryType.General
         }
     }
@@ -369,6 +380,58 @@ class SystemQueries {
         """.trimIndent()
 
         return analyzerChat.sendMessage(searchPrompt).text?.trim() ?: ""
+    }
+
+    suspend fun extractEmailContent(query: String): EmailContent {
+        val emailPrompt = """
+            Extract email details from: "$query"
+            If subject is not specified, create an appropriate one.
+            If the content is about a meeting, include relevant details in a professional manner.
+            Reply in format:
+            TO:[email address]
+            SUBJECT:[subject line]
+            BODY:[email body]
+            
+            Guidelines:
+            - Keep the tone professional
+            - Include all important details (time, date, purpose if mentioned)
+            - Format the body properly with greetings and signature
+            - If meeting related, include location/link if specified
+            
+            Example:
+            Query: "send mail to john@gmail.com inviting him for today's meeting at 4 PM"
+            TO:john@gmail.com
+            SUBJECT:Meeting Invitation - Today at 4 PM
+            BODY:Dear John,
+
+            I hope this email finds you well. I would like to invite you to a meeting scheduled for today at 4 PM.
+
+            Looking forward to your participation.
+
+            Best regards
+        """.trimIndent()
+
+        val response = responseChat.sendMessage(emailPrompt).text?.trim() ?: return EmailContent("")
+        
+        return try {
+            val to = response.lineSequence()
+                .firstOrNull { it.startsWith("TO:") }
+                ?.substringAfter("TO:")
+                ?.trim() ?: ""
+
+            val subject = response.lineSequence()
+                .firstOrNull { it.startsWith("SUBJECT:") }
+                ?.substringAfter("SUBJECT:")
+                ?.trim() ?: "Meeting Invitation"
+
+            val body = response.substringAfter("BODY:", "")
+                .trim()
+                .ifEmpty { "No content provided" }
+
+            EmailContent(to, subject, body)
+        } catch (e: Exception) {
+            EmailContent("")
+        }
     }
 
     data class NotificationContent(

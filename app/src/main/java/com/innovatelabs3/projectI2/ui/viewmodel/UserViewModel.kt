@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import com.innovatelabs3.projectI2.utils.FileSearchResult
 import com.innovatelabs3.projectI2.utils.PaymentUtils
 import com.innovatelabs3.projectI2.domain.extractPhonePePaymentDetails
+import com.innovatelabs3.projectI2.utils.EmailUtils
 
 class UserViewModel : ViewModel() {
     private val context = ProjectIApplication.getContext()
@@ -277,6 +278,21 @@ class UserViewModel : ViewModel() {
                                 lastOperation = null
                             } else {
                                 addAssistantMessage("Sorry, I couldn't understand what you're looking for. Please specify a search term.")
+                            }
+                        }
+                        is QueryType.SendEmail -> {
+                            val content = systemQueries.extractEmailContent(message)
+                            if (content.to.isNotEmpty()) {
+                                EmailUtils.sendEmail(
+                                    context = context,
+                                    to = content.to,
+                                    subject = content.subject,
+                                    body = content.body,
+                                    isHtml = content.isHtml
+                                )
+                                addAssistantMessage("Opening email composer to send mail to ${content.to}")
+                            } else {
+                                addAssistantMessage("Sorry, I couldn't understand the email address. Please specify who you want to send the email to.")
                             }
                         }
                         else -> {
