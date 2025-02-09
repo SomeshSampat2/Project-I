@@ -24,6 +24,7 @@ sealed class QueryType {
     object SaveContact : QueryType()
     object SearchFiles : QueryType()
     object SendEmail : QueryType()
+    object MakeCall : QueryType()
 }
 
 class SystemQueries {
@@ -108,6 +109,11 @@ class SystemQueries {
         val isHtml: Boolean = false
     )
 
+    data class CallContent(
+        val contactName: String = "",
+        val phoneNumber: String = ""
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -130,6 +136,7 @@ class SystemQueries {
             SAVE_CONTACT - if asking to save or add a contact/phone number
             SEARCH_FILES - if asking to find or search for files, documents, photos, or videos on the device
             SEND_EMAIL - if asking to send an email
+            MAKE_CALL - if asking to call someone or dial a phone number
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -169,6 +176,11 @@ class SystemQueries {
             "Search for photos with name vacation" -> SEARCH_FILES
             "Look for documents containing report" -> SEARCH_FILES
             "Send mail to john@gmail.com inviting him for today's meeting at 4 PM" -> SEND_EMAIL
+            "Call John" -> MAKE_CALL
+            "Call 9999999999" -> MAKE_CALL
+            "Dial +1234567890" -> MAKE_CALL
+            "Make a call to Mary" -> MAKE_CALL
+            "Phone Dad" -> MAKE_CALL
             
             Query: "$query"
         """.trimIndent()
@@ -190,6 +202,7 @@ class SystemQueries {
             "SAVE_CONTACT" -> QueryType.SaveContact
             "SEARCH_FILES" -> QueryType.SearchFiles
             "SEND_EMAIL" -> QueryType.SendEmail
+            "MAKE_CALL" -> QueryType.MakeCall
             else -> QueryType.General
         }
     }
@@ -412,7 +425,7 @@ class SystemQueries {
         """.trimIndent()
 
         val response = responseChat.sendMessage(emailPrompt).text?.trim() ?: return EmailContent("")
-        
+
         return try {
             val to = response.lineSequence()
                 .firstOrNull { it.startsWith("TO:") }
@@ -431,6 +444,48 @@ class SystemQueries {
             EmailContent(to, subject, body)
         } catch (e: Exception) {
             EmailContent("")
+        }
+    }
+
+    suspend fun extractCallDetails(query: String): CallContent {
+        val callPrompt = """
+            Extract call details from: "$query"
+            Reply in format:
+            CONTACT_NAME:[name]
+            PHONE:[phone number]
+            
+            Guidelines:
+            - If direct phone number is given, keep contact name empty
+            - If name is given, keep phone empty
+            - Remove any non-digit characters from phone number except +
+            
+            Example:
+            Query: "call john"
+            CONTACT_NAME:john
+            PHONE:
+            
+            Query: "call 9999999999"
+            CONTACT_NAME:
+            PHONE:9999999999
+        """.trimIndent()
+
+        val response = analyzerChat.sendMessage(callPrompt).text?.trim() ?: return CallContent()
+
+        return try {
+            val contactName = response.lineSequence()
+                .firstOrNull { it.startsWith("CONTACT_NAME:") }
+                ?.substringAfter("CONTACT_NAME:")
+                ?.trim() ?: ""
+
+            val phoneNumber = response.lineSequence()
+                .firstOrNull { it.startsWith("PHONE:") }
+                ?.substringAfter("PHONE:")
+                ?.trim()
+                ?.replace(Regex("[^0-9+]"), "") ?: ""
+
+            CallContent(contactName, phoneNumber)
+        } catch (e: Exception) {
+            CallContent()
         }
     }
 

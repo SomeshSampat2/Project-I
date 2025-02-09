@@ -30,6 +30,7 @@ import com.innovatelabs3.projectI2.utils.FileSearchResult
 import com.innovatelabs3.projectI2.utils.PaymentUtils
 import com.innovatelabs3.projectI2.domain.extractPhonePePaymentDetails
 import com.innovatelabs3.projectI2.utils.EmailUtils
+import com.innovatelabs3.projectI2.utils.CallUtils
 
 class UserViewModel : ViewModel() {
     private val context = ProjectIApplication.getContext()
@@ -81,6 +82,13 @@ class UserViewModel : ViewModel() {
     // Add a new state flow for search results
     private val _searchResults = MutableStateFlow<List<FileSearchResult>>(emptyList())
     val searchResults: StateFlow<List<FileSearchResult>> = _searchResults.asStateFlow()
+
+    private var pendingCall: CallDetails? = null
+
+    data class CallDetails(
+        val number: String,
+        val displayName: String
+    )
 
     fun shouldAnimateMessage(timestamp: Long): Boolean {
         return if (timestamp !in animatedMessages) {
@@ -295,6 +303,30 @@ class UserViewModel : ViewModel() {
                                 addAssistantMessage("Sorry, I couldn't understand the email address. Please specify who you want to send the email to.")
                             }
                         }
+                        is QueryType.MakeCall -> {
+                            val content = systemQueries.extractCallDetails(message)
+                            when {
+                                content.phoneNumber.isNotEmpty() && CallUtils.isValidPhoneNumber(content.phoneNumber) -> {
+                                    handleCallRequest(content.phoneNumber, content.phoneNumber)
+                                }
+                                content.contactName.isNotEmpty() -> {
+                                    if (ContactUtils.checkContactPermission(context)) {
+                                        val contactInfo = ContactUtils.findContactByName(context, content.contactName)
+                                        if (contactInfo != null) {
+                                            handleCallRequest(contactInfo.phoneNumber, contactInfo.name)
+                                        } else {
+                                            addAssistantMessage("Sorry, I couldn't find '${content.contactName}' in your contacts.")
+                                        }
+                                    } else {
+                                        _requestPermission.value = "contacts"
+                                        addAssistantMessage("I need permission to access contacts to find ${content.contactName}'s number. Please grant contacts permission.")
+                                    }
+                                }
+                                else -> {
+                                    addAssistantMessage("Sorry, I couldn't understand who you want to call. Please provide a name or phone number.")
+                                }
+                            }
+                        }
                         else -> {
                             val response = systemQueries.handleGeneralQuery(message)
                             addAssistantMessage(response)
@@ -430,4 +462,37 @@ class UserViewModel : ViewModel() {
             }
         }
     }
-} 
+
+    private fun handleCallRequest(phoneNumber: String, displayName: String) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+            CallUtils.makePhoneCall(context, phoneNumber) {
+                // Permission callback not needed here as we already have permission
+            }
+            addAssistantMessage("Calling $displayName")
+        } else {
+            pendingCall = CallDetails(phoneNumber, displayName)
+            _requestPermission.value = "call"
+            addAssistantMessage("I need permission to make phone calls. Please grant the permission when prompted.")
+        }
+    }
+
+    fun onPermissionResult(permission: String, isGranted: Boolean) {
+        when (permission) {
+            "call" -> {
+                if (isGranted) {
+                    pendingCall?.let { call ->
+                        CallUtils.makePhoneCall(context, call.number) {
+                            // Permission callback not needed here as we already have permission
+                        }
+                        addAssistantMessage("Calling ${call.displayName}")
+                    }
+                } else {
+                    addAssistantMessage("Call permission was denied. I cannot make calls without this permission.")
+                }
+                pendingCall = null
+            }
+            // ... handle other permissions ...
+        }
+        _requestPermission.value = null
+    }
+}
