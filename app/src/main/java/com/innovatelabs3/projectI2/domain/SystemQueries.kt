@@ -94,6 +94,12 @@ class SystemQueries {
         val phoneNumber: String
     )
 
+    data class PhonePePayment(
+        val amount: String,
+        val recipientUpiId: String,
+        val recipientName: String = "Recipient"
+    )
+
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
             Analyze this query and respond with only one of these categories:
@@ -373,5 +379,15 @@ class SystemQueries {
 
     enum class NotificationPriority {
         HIGH, DEFAULT, LOW
+    }
+}
+
+fun String.extractPhonePePaymentDetails(): SystemQueries.PhonePePayment? {
+    val regex = """(?i)(?:pay|send)\s+(\d+)(?:\s+(?:rs|rupees))?\s+(?:to\s+)?([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+)(?:\s+(?:through|via|using|with)\s+phonepe)?""".toRegex()
+    
+    return regex.find(this)?.let { match ->
+        val amount = match.groupValues[1]
+        val upiId = match.groupValues[2]
+        SystemQueries.PhonePePayment(amount, upiId)
     }
 } 

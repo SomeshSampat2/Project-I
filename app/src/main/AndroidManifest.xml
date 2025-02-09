@@ -13,6 +13,7 @@
         <package android:name="com.ubercab" />
         <package android:name="com.flipkart.android" />
         <package android:name="com.amazon.mShop.android.shopping" />
+        <package android:name="com.phonepe.app" />
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />
