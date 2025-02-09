@@ -3,6 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.innovatelabs3.projectI2">
 
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
     <queries>
         <package android:name="com.whatsapp" />
         <package android:name="com.google.android.apps.maps" />
@@ -27,6 +31,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <application
         android:name=".ProjectIApplication"

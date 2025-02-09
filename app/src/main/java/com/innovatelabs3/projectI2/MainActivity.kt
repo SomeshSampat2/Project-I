@@ -76,6 +76,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val callPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        viewModel.onPermissionResult("call", isGranted)
+    }
+
     private fun getRequiredPermissions(): Array<String> {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14
             arrayOf(
@@ -154,6 +160,12 @@ class MainActivity : ComponentActivity() {
                                         arrayOf(Manifest.permission.POST_NOTIFICATIONS)
                                     )
                                 }
+                            }
+                            "call" -> {
+                                callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
+                            }
+                            "contacts" -> {
+                                // ... existing contacts permission handling ...
                             }
                         }
                         viewModel.clearPermissionRequest()
