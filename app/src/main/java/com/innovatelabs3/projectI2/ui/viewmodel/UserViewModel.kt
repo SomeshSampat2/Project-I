@@ -25,9 +25,10 @@ import com.innovatelabs3.projectI2.utils.FileSearchUtils
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.innovatelabs3.projectI2.utils.FileSearchResult
+import com.innovatelabs3.projectI2.utils.PaymentUtils
+import com.innovatelabs3.projectI2.domain.extractPhonePePaymentDetails
 
 class UserViewModel : ViewModel() {
     private val context = ProjectIApplication.getContext()
@@ -96,33 +97,40 @@ class UserViewModel : ViewModel() {
         }
     }
 
-    fun processCommand(command: String) {
+    fun processCommand(message: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                _chatMessages.value = _chatMessages.value + ChatMessage(command, true)
+                _chatMessages.value = _chatMessages.value + ChatMessage(message, true)
+
+                // Check for PhonePe payment first
+                message.extractPhonePePaymentDetails()?.let { payment ->
+                    handleSystemQuery(payment)
+                    _isLoading.value = false
+                    return@launch
+                }
 
                 if (isSearchMode.value) {
-                    handleSearchQuery(command)
+                    handleSearchQuery(message)
                 } else {
-                    val type = systemQueries.analyzeQueryType(command)
+                    val type = systemQueries.analyzeQueryType(message)
                     // Update the query type first
                     _lastQueryType.value = type
                     
                     // Then handle the query
                     when (type) {
                         is QueryType.ShowToast -> {
-                            val message = systemQueries.extractToastMessage(command)
+                            val message = systemQueries.extractToastMessage(message)
                             _showToast.value = message
                             addAssistantMessage("I've shown a toast message saying: $message")
                         }
                         is QueryType.ShowSnackbar -> {
-                            val message = systemQueries.extractSnackbarMessage(command)
+                            val message = systemQueries.extractSnackbarMessage(message)
                             _showSnackbar.value = message
                             addAssistantMessage("I've shown a snackbar message saying: $message")
                         }
                         is QueryType.ShowNotification -> {
-                            val content = systemQueries.extractNotificationContent(command)
+                            val content = systemQueries.extractNotificationContent(message)
                             _showNotification.value = content
                             addAssistantMessage("I've shown a notification with title: ${content.title} and message: ${content.message}")
                         }
@@ -134,7 +142,7 @@ class UserViewModel : ViewModel() {
                             addAssistantMessage(systemQueries.getIdentityResponse())
                         }
                         is QueryType.SendWhatsAppMessage -> {
-                            val content = systemQueries.extractWhatsAppMessageContent(command)
+                            val content = systemQueries.extractWhatsAppMessageContent(message)
                             if (content.phoneNumber.isNotEmpty()) {
                                 // Direct phone number was provided
                                 GenericUtils.openWhatsAppChat(context, content.phoneNumber, content.message)
@@ -157,7 +165,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.ShowDirections -> {
-                            val content = systemQueries.extractDirectionsContent(command)
+                            val content = systemQueries.extractDirectionsContent(message)
                             if (content.destination.isNotEmpty()) {
                                 GenericUtils.openGoogleMaps(context, content.destination)
                                 addAssistantMessage("Opening Google Maps with directions to ${content.destination}")
@@ -166,7 +174,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.SearchYouTube -> {
-                            val content = systemQueries.extractYouTubeSearchQuery(command)
+                            val content = systemQueries.extractYouTubeSearchQuery(message)
                             if (content.searchQuery.isNotEmpty()) {
                                 GenericUtils.openYouTubeSearch(context, content.searchQuery)
                                 addAssistantMessage("Opening YouTube to search for '${content.searchQuery}'")
@@ -175,7 +183,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.OpenInstagramProfile -> {
-                            val content = systemQueries.extractInstagramUsername(command)
+                            val content = systemQueries.extractInstagramUsername(message)
                             if (content.username.isNotEmpty()) {
                                 GenericUtils.openInstagramProfile(context, content.username)
                                 addAssistantMessage("Opening Instagram profile for @${content.username}")
@@ -184,7 +192,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.JoinGoogleMeet -> {
-                            val content = systemQueries.extractGoogleMeetCode(command)
+                            val content = systemQueries.extractGoogleMeetCode(message)
                             if (content.meetingCode.isNotEmpty()) {
                                 GenericUtils.joinGoogleMeet(context, content.meetingCode)
                                 addAssistantMessage("Opening Google Meet with code: ${content.meetingCode}")
@@ -193,7 +201,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.SearchSpotify -> {
-                            val content = systemQueries.extractSpotifySearchContent(command)
+                            val content = systemQueries.extractSpotifySearchContent(message)
                             if (content.query.isNotEmpty()) {
                                 GenericUtils.searchSpotify(context, content.query, content.type)
                                 val typeMsg = if (content.type == "artist") "artist" else "track"
@@ -203,7 +211,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.BookUber -> {
-                            val content = systemQueries.extractUberDestination(command)
+                            val content = systemQueries.extractUberDestination(message)
                             if (content.destination.isNotEmpty()) {
                                 GenericUtils.bookUberRide(context, content.destination)
                                 addAssistantMessage("Opening Uber to book a ride to ${content.destination}")
@@ -212,7 +220,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.SearchProduct -> {
-                            val content = systemQueries.extractProductSearchContent(command)
+                            val content = systemQueries.extractProductSearchContent(message)
                             if (content.query.isNotEmpty()) {
                                 GenericUtils.searchProduct(context, content.query, content.platform)
                                 val platformMsg = if (content.platform == "amazon") "Amazon" else "Flipkart"
@@ -222,7 +230,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.SaveContact -> {
-                            val content = systemQueries.extractContactDetails(command)
+                            val content = systemQueries.extractContactDetails(message)
                             if (content.name.isNotEmpty() && content.phoneNumber.isNotEmpty()) {
                                 if (ContactUtils.checkContactPermission(context)) {
                                     if (ContactUtils.saveContact(context, content.name, content.phoneNumber)) {
@@ -249,7 +257,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         is QueryType.SearchFiles -> {
-                            val searchTerm = systemQueries.extractSearchQuery(command)
+                            val searchTerm = systemQueries.extractSearchQuery(message)
                             if (searchTerm.isNotEmpty()) {
                                 lastOperation = {
                                     viewModelScope.launch {
@@ -272,7 +280,7 @@ class UserViewModel : ViewModel() {
                             }
                         }
                         else -> {
-                            val response = systemQueries.handleGeneralQuery(command)
+                            val response = systemQueries.handleGeneralQuery(message)
                             addAssistantMessage(response)
                         }
                     }
@@ -387,6 +395,23 @@ class UserViewModel : ViewModel() {
             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED
         } else {
             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun handleSystemQuery(query: Any) {
+        when (query) {
+            is SystemQueries.PhonePePayment -> {
+                PaymentUtils.openPhonePe(
+                    context = context,
+                    recipientUpiId = query.recipientUpiId,
+                    recipientName = query.recipientName,
+                    amount = query.amount
+                )
+                addAssistantMessage("Opening PhonePe to pay ₹${query.amount} to ${query.recipientUpiId}")
+            }
+            else -> {
+                // Handle other query types
+            }
         }
     }
 } 
