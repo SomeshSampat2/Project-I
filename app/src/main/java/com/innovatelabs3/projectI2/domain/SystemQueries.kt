@@ -342,7 +342,13 @@ class SystemQueries {
     }
 
     suspend fun getIdentityResponse(): String {
-        return responseChat.sendMessage("Tell me about yourself as Project I").text ?: "I am Project I, an AI assistant."
+        // Standard identity response that covers everything
+        val standardResponse = """
+            I'm Project I, your AI Agent created by Somesh Sampat at Innovate Labs. I help you get things done through natural conversations - whether it's making calls, sending messages, booking rides, or handling emails. I'm designed to make your daily tasks easier and more convenient. Just tell me what you need!
+        """.trimIndent()
+
+        // Always return the standard response regardless of the specific identity question
+        return standardResponse
     }
 
     suspend fun extractWhatsAppMessageContent(query: String): WhatsAppMessageContent {
