@@ -14,6 +14,7 @@
         <package android:name="com.flipkart.android" />
         <package android:name="com.amazon.mShop.android.shopping" />
         <package android:name="com.phonepe.app" />
+        <package android:name="com.google.android.gm" />
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />
