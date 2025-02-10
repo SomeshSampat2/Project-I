@@ -9,7 +9,11 @@ import androidx.compose.ui.unit.sp
 import com.innovatelabs3.projectI2.R
 
 val OpenSansFont = FontFamily(
-    Font(R.font.opensans1, FontWeight.Normal)
+    Font(R.font.opensansregular, FontWeight.Normal),
+    Font(R.font.opensansbold, FontWeight.Bold),
+    Font(R.font.opensansextrabold, FontWeight.ExtraBold),
+    Font(R.font.opensansmedium, FontWeight.Medium),
+    Font(R.font.opensanssemibold, FontWeight.SemiBold),
 )
 
 val Typography = Typography(
@@ -22,7 +26,7 @@ val Typography = Typography(
     ),
     titleLarge = TextStyle(
         fontFamily = OpenSansFont,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Bold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
@@ -33,5 +37,11 @@ val Typography = Typography(
         fontSize = 11.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = OpenSansFont,
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp,
+        lineHeight = 20.sp,
     )
 ) 

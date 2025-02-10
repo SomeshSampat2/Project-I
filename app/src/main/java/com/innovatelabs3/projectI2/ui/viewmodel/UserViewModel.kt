@@ -495,4 +495,4 @@ class UserViewModel : ViewModel() {
         }
         _requestPermission.value = null
     }
-}
+} 
