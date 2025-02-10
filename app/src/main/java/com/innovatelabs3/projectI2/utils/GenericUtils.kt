@@ -44,8 +44,9 @@ class GenericUtils {
         @SuppressLint("MissingPermission")
         fun showNotification(context: Context, content: SystemQueries.NotificationContent) {
             val channelId = "project_i_channel"
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
             // Create notification channel for Android O and above
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = android.app.NotificationChannel(
@@ -60,11 +61,13 @@ class GenericUtils {
                 .setContentTitle(content.title)
                 .setContentText(content.message)
                 .setSmallIcon(R.drawable.ic_project_i)
-                .setPriority(when (content.priority) {
-                    SystemQueries.NotificationPriority.HIGH -> NotificationCompat.PRIORITY_HIGH
-                    SystemQueries.NotificationPriority.LOW -> NotificationCompat.PRIORITY_LOW
-                    else -> NotificationCompat.PRIORITY_DEFAULT
-                })
+                .setPriority(
+                    when (content.priority) {
+                        SystemQueries.NotificationPriority.HIGH -> NotificationCompat.PRIORITY_HIGH
+                        SystemQueries.NotificationPriority.LOW -> NotificationCompat.PRIORITY_LOW
+                        else -> NotificationCompat.PRIORITY_DEFAULT
+                    }
+                )
                 .setAutoCancel(true)
                 .build()
 
@@ -89,11 +92,11 @@ class GenericUtils {
 
         fun openWhatsApp(context: Context) {
             val whatsappPackage = "com.whatsapp"
-            
+
             try {
                 // First check if WhatsApp is installed
                 context.packageManager.getPackageInfo(whatsappPackage, 0)
-                
+
                 // If we get here, WhatsApp is installed
                 val launchIntent = context.packageManager.getLaunchIntentForPackage(whatsappPackage)
                 if (launchIntent != null) {
@@ -133,10 +136,11 @@ class GenericUtils {
             try {
                 // First check if WhatsApp is installed
                 context.packageManager.getPackageInfo("com.whatsapp", PackageManager.GET_ACTIVITIES)
-                
+
                 // Build the URL using WhatsApp API
-                val url = "https://api.whatsapp.com/send?phone=$phoneNumber&text=${Uri.encode(message)}"
-                
+                val url =
+                    "https://api.whatsapp.com/send?phone=$phoneNumber&text=${Uri.encode(message)}"
+
                 // Create and start the intent
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     data = Uri.parse(url)
@@ -156,7 +160,7 @@ class GenericUtils {
             try {
                 // First check if Google Maps is installed
                 context.packageManager.getPackageInfo("com.google.android.apps.maps", 0)
-                
+
                 // Create the maps intent
                 val encodedDest = Uri.encode(destination)
                 val mapsUri = Uri.parse("google.navigation:q=$encodedDest")
@@ -164,7 +168,7 @@ class GenericUtils {
                     setPackage("com.google.android.apps.maps")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                
+
                 context.startActivity(intent)
                 showToast(context, "Opening Google Maps...")
             } catch (e: NameNotFoundException) {
@@ -180,14 +184,14 @@ class GenericUtils {
             try {
                 // First check if YouTube is installed
                 context.packageManager.getPackageInfo("com.google.android.youtube", 0)
-                
+
                 // Create the YouTube search intent with the correct URL scheme
                 val youtubeIntent = Intent(Intent.ACTION_SEARCH).apply {
                     setPackage("com.google.android.youtube")
                     putExtra("query", query)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                
+
                 context.startActivity(youtubeIntent)
                 showToast(context, "Opening YouTube search...")
             } catch (e: NameNotFoundException) {
@@ -198,7 +202,11 @@ class GenericUtils {
                 // Fallback to browser if app intent fails
                 try {
                     val browserIntent = Intent(Intent.ACTION_VIEW).apply {
-                        data = Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")
+                        data = Uri.parse(
+                            "https://www.youtube.com/results?search_query=${
+                                Uri.encode(query)
+                            }"
+                        )
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(browserIntent)
@@ -213,7 +221,7 @@ class GenericUtils {
             try {
                 // First check if Instagram is installed
                 context.packageManager.getPackageInfo("com.instagram.android", 0)
-                
+
                 // Try to open in Instagram app first
                 val instaIntent = Intent(Intent.ACTION_VIEW).apply {
                     data = Uri.parse("instagram://user?username=$username")
@@ -245,17 +253,17 @@ class GenericUtils {
             try {
                 // First check if Google Meet is installed
                 context.packageManager.getPackageInfo("com.google.android.apps.meetings", 0)
-                
+
                 // Clean the meeting code (remove spaces, hyphens, etc)
                 val cleanCode = meetingCode.replace(Regex("[^a-zA-Z0-9]"), "")
-                
+
                 // Create the Meet intent
                 val meetIntent = Intent(Intent.ACTION_VIEW).apply {
                     data = Uri.parse("https://meet.google.com/$cleanCode")
                     setPackage("com.google.android.apps.meetings")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                
+
                 context.startActivity(meetIntent)
                 showToast(context, "Opening Google Meet...")
             } catch (e: NameNotFoundException) {
@@ -281,7 +289,7 @@ class GenericUtils {
             try {
                 // First check if Spotify is installed
                 context.packageManager.getPackageInfo("com.spotify.music", 0)
-                
+
                 // Create the Spotify search intent with direct search
                 val encodedQuery = Uri.encode(query)
                 val spotifyUri = when (type) {
@@ -289,7 +297,7 @@ class GenericUtils {
                     "track" -> "spotify://search/track/$encodedQuery"
                     else -> "spotify://search/all/$encodedQuery"
                 }
-                
+
                 val spotifyIntent = Intent(Intent.ACTION_VIEW).apply {
                     data = Uri.parse(spotifyUri)
                     setPackage("com.spotify.music")
@@ -297,9 +305,12 @@ class GenericUtils {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     // Add search query as extra
                     putExtra("query", query)
-                    putExtra("android.intent.extra.REFERRER", Uri.parse("android-app://${context.packageName}"))
+                    putExtra(
+                        "android.intent.extra.REFERRER",
+                        Uri.parse("android-app://${context.packageName}")
+                    )
                 }
-                
+
                 context.startActivity(spotifyIntent)
                 showToast(context, "Searching Spotify...")
             } catch (e: NameNotFoundException) {
@@ -327,17 +338,18 @@ class GenericUtils {
             try {
                 // First check if Uber is installed
                 context.packageManager.getPackageInfo("com.ubercab", 0)
-                
+
                 // Create the Uber deep link
                 val encodedDest = Uri.encode(destination)
-                val uberUri = "uber://?action=setPickup&pickup=my_location&dropoff[formatted_address]=$encodedDest"
-                
+                val uberUri =
+                    "uber://?action=setPickup&pickup=my_location&dropoff[formatted_address]=$encodedDest"
+
                 val uberIntent = Intent(Intent.ACTION_VIEW).apply {
                     data = Uri.parse(uberUri)
                     setPackage("com.ubercab")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                
+
                 context.startActivity(uberIntent)
                 showToast(context, "Opening Uber...")
             } catch (e: NameNotFoundException) {
@@ -371,7 +383,7 @@ class GenericUtils {
             try {
                 // First check if Flipkart is installed
                 context.packageManager.getPackageInfo("com.flipkart.android", 0)
-                
+
                 // Create the Flipkart search intent with the correct deep link format
                 val encodedQuery = Uri.encode(query)
                 val flipkartIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -380,7 +392,7 @@ class GenericUtils {
                     setPackage("com.flipkart.android")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                
+
                 context.startActivity(flipkartIntent)
                 showToast(context, "Searching on Flipkart...")
             } catch (e: NameNotFoundException) {
@@ -402,7 +414,7 @@ class GenericUtils {
             try {
                 // First check if Amazon is installed
                 context.packageManager.getPackageInfo("com.amazon.mShop.android.shopping", 0)
-                
+
                 // Create the Amazon search intent
                 val encodedQuery = Uri.encode(query)
                 val amazonIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -410,7 +422,7 @@ class GenericUtils {
                     setPackage("com.amazon.mShop.android.shopping")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                
+
                 context.startActivity(amazonIntent)
                 showToast(context, "Searching on Amazon...")
             } catch (e: NameNotFoundException) {

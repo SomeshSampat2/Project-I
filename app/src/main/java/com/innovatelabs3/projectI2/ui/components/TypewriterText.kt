@@ -23,7 +23,7 @@ fun TypewriterText(
     onAnimationComplete: () -> Unit = {}
 ) {
     var textToDisplay by remember(text) { mutableStateOf(if (shouldAnimate) "" else text.toString()) }
-    var currentPosition by remember(text) { mutableStateOf(0) }
+    var currentPosition by remember(text) { mutableIntStateOf(0) }
     var isAnimating by remember(text) { mutableStateOf(shouldAnimate) }
 
     LaunchedEffect(text) {

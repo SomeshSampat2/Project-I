@@ -9,28 +9,33 @@ import android.widget.Toast
 
 object PaymentUtils {
 
-    fun openPhonePe(context: Context, recipientUpiId: String, recipientName: String, amount: String) {
+    fun openPhonePe(
+        context: Context,
+        recipientUpiId: String,
+        recipientName: String,
+        amount: String
+    ) {
         try {
             // Build the UPI payment URI
             val upiUri = Uri.parse(
                 "upi://pay?" +
-                "pa=$recipientUpiId" +
-                "&pn=${Uri.encode(recipientName)}" +
-                "&am=$amount" +
-                "&cu=INR"
+                        "pa=$recipientUpiId" +
+                        "&pn=${Uri.encode(recipientName)}" +
+                        "&am=$amount" +
+                        "&cu=INR"
             )
-            
+
             // Create intent for PhonePe
             val intent = Intent(Intent.ACTION_VIEW, upiUri).apply {
                 setPackage("com.phonepe.app")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            
+
             if (isPhonePeInstalled(context)) {
                 context.startActivity(intent)
             } else {
                 // If PhonePe not installed, show Play Store
-                openPlayStore(context, "com.phonepe.app")
+                openPlayStore(context)
             }
         } catch (e: Exception) {
             Toast.makeText(
@@ -50,7 +55,7 @@ object PaymentUtils {
         }
     }
 
-    private fun openPlayStore(context: Context, packageName: String) {
+    private fun openPlayStore(context: Context, packageName: String = "com.phonepe.app") {
         try {
             context.startActivity(
                 Intent(

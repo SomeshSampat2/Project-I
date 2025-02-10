@@ -1,6 +1,5 @@
 package com.innovatelabs3.projectI2.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.innovatelabs3.projectI2.BuildConfig
 import com.innovatelabs3.projectI2.data.model.ChatMessage
@@ -19,21 +18,22 @@ import kotlinx.coroutines.launch
 import com.innovatelabs3.projectI2.domain.SystemQueries
 import com.innovatelabs3.projectI2.domain.QueryType
 import com.innovatelabs3.projectI2.utils.GenericUtils
-import com.innovatelabs3.projectI2.ProjectIApplication
 import com.innovatelabs3.projectI2.utils.ContactUtils
 import com.innovatelabs3.projectI2.utils.FileSearchUtils
 import android.Manifest
+import android.app.Application
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.AndroidViewModel
 import com.innovatelabs3.projectI2.utils.FileSearchResult
 import com.innovatelabs3.projectI2.utils.PaymentUtils
 import com.innovatelabs3.projectI2.domain.extractPhonePePaymentDetails
 import com.innovatelabs3.projectI2.utils.EmailUtils
 import com.innovatelabs3.projectI2.utils.CallUtils
 
-class UserViewModel : ViewModel() {
-    private val context = ProjectIApplication.getContext()
+class UserViewModel(application: Application) : AndroidViewModel(application) {
+    private val context = application
 
     private val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash",
@@ -110,7 +110,7 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                _chatMessages.value = _chatMessages.value + ChatMessage(message, true)
+                _chatMessages.value += ChatMessage(message, true)
 
                 // Check for PhonePe payment first
                 message.extractPhonePePaymentDetails()?.let { payment ->
@@ -129,14 +129,14 @@ class UserViewModel : ViewModel() {
                     // Then handle the query
                     when (type) {
                         is QueryType.ShowToast -> {
-                            val message = systemQueries.extractToastMessage(message)
-                            _showToast.value = message
-                            addAssistantMessage("I've shown a toast message saying: $message")
+                            val query = systemQueries.extractToastMessage(message)
+                            _showToast.value = query
+                            addAssistantMessage("I've shown a toast message saying: $query")
                         }
                         is QueryType.ShowSnackbar -> {
-                            val message = systemQueries.extractSnackbarMessage(message)
-                            _showSnackbar.value = message
-                            addAssistantMessage("I've shown a snackbar message saying: $message")
+                            val query = systemQueries.extractSnackbarMessage(message)
+                            _showSnackbar.value = query
+                            addAssistantMessage("I've shown a snackbar message saying: $query")
                         }
                         is QueryType.ShowNotification -> {
                             val content = systemQueries.extractNotificationContent(message)
@@ -428,7 +428,7 @@ class UserViewModel : ViewModel() {
     }
 
     private fun addAssistantMessage(message: String) {
-        _chatMessages.value = _chatMessages.value + ChatMessage(message, false)
+        _chatMessages.value += ChatMessage(message, false)
     }
 
     private fun checkStoragePermissions(): Boolean {

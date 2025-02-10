@@ -1,7 +1,6 @@
 package com.innovatelabs3.projectI2
 
 import android.Manifest
-import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -32,7 +30,6 @@ import androidx.compose.runtime.getValue
 import com.innovatelabs3.projectI2.ui.screen.UserScreen
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationManagerCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -46,7 +43,7 @@ import androidx.lifecycle.lifecycleScope
 
 class MainActivity : ComponentActivity() {
     private val viewModel: UserViewModel by viewModels()
-    
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -55,8 +52,7 @@ class MainActivity : ComponentActivity() {
             viewModel.retryLastOperation()
         } else {
             showPermissionRationaleDialog(
-                getRequiredPermissions(),
-                "These permissions are required to access your files. Would you like to grant them?"
+                getRequiredPermissions()
             )
         }
     }
@@ -108,6 +104,7 @@ class MainActivity : ComponentActivity() {
                             "storage" -> {
                                 requestPermissionLauncher.launch(getRequiredPermissions())
                             }
+
                             "notification" -> {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                     requestPermissionLauncher.launch(
@@ -115,9 +112,11 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
+
                             "call" -> {
                                 callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
                             }
+
                             "contacts" -> {
                                 // ... existing contacts permission handling ...
                             }
@@ -131,7 +130,7 @@ class MainActivity : ComponentActivity() {
 
     private fun showPermissionRationaleDialog(
         permissions: Array<String>,
-        message: String
+        message: String = "These permissions are required to access your files. Would you like to grant them?"
     ) {
         AlertDialog.Builder(this)
             .setTitle("Permission Required")
@@ -140,7 +139,10 @@ class MainActivity : ComponentActivity() {
                 requestPermissionLauncher.launch(permissions)
             }
             .setNegativeButton("Cancel") { _, _ ->
-                GenericUtils.showToast(this, "Permission denied. Cannot proceed with the operation.")
+                GenericUtils.showToast(
+                    this,
+                    "Permission denied. Cannot proceed with the operation."
+                )
             }
             .setCancelable(false)
             .show()
@@ -215,7 +217,11 @@ fun MainScreen(viewModel: UserViewModel) {
 
             // Show notification when content is available
             LaunchedEffect(showNotification) {
-                if (GenericUtils.checkAndRequestNotificationPermission(context, requestPermissionLauncher)) {
+                if (GenericUtils.checkAndRequestNotificationPermission(
+                        context,
+                        requestPermissionLauncher
+                    )
+                ) {
                     showNotification?.let { content ->
                         GenericUtils.showNotification(context, content)
                         viewModel.clearNotification()

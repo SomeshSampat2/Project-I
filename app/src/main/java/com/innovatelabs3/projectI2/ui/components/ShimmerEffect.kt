@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,10 +22,9 @@ import androidx.compose.ui.unit.sp
 import com.innovatelabs3.projectI2.ui.theme.OpenSansFont
 import com.innovatelabs3.projectI2.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
-import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.togetherWith
 import com.innovatelabs3.projectI2.domain.QueryType
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType.General) {
     val shimmerColors = listOf(
@@ -36,7 +34,7 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
     )
 
     val transition = rememberInfiniteTransition()
-    
+
     // Single shimmer animation for consistency
     val translateAnim = transition.animateFloat(
         initialValue = 0f,
@@ -49,7 +47,7 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
             repeatMode = RepeatMode.Restart
         )
     )
-    
+
     val dotsAnim = transition.animateFloat(
         initialValue = 0f,
         targetValue = 3f,
@@ -83,18 +81,21 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
                 "Preparing to launch",
                 "Almost ready"
             )
+
             is QueryType.SaveContact -> listOf(
                 "Preparing contact details",
                 "Formatting information",
                 "Saving to contacts",
                 "Almost done"
             )
+
             is QueryType.ShowNotification, is QueryType.ShowToast, is QueryType.ShowSnackbar -> listOf(
                 "Processing your request",
                 "Preparing message",
                 "Setting up display",
                 "Almost ready"
             )
+
             else -> if (isWebSearch) {
                 listOf(
                     "Searching the web",
@@ -112,9 +113,9 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
             }
         }
     }
-    
-    var currentMessageIndex by remember { mutableStateOf(0) }
-    
+
+    var currentMessageIndex by remember { mutableIntStateOf(0) }
+
     LaunchedEffect(Unit) {
         while (true) {
             delay(2000)
@@ -142,21 +143,18 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
             AnimatedContent(
                 targetState = loadingMessages[currentMessageIndex],
                 transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) with
-                    fadeOut(animationSpec = tween(300))
-                }
+                    fadeIn(animationSpec = tween(durationMillis = 500))
+                        .togetherWith(fadeOut(animationSpec = tween(durationMillis = 500)))
+                },
+                label = "Loading Message Animation"
             ) { message ->
                 Text(
                     text = message,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = OpenSansFont,
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = 0.3.sp
-                    ),
-                    color = TextSecondary
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
             }
-            
+
             Text(
                 text = ".".repeat(dotsAnim.value.toInt() + 1),
                 style = MaterialTheme.typography.titleMedium.copy(

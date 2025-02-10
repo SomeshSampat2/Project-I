@@ -28,13 +28,13 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun CodeBlock(
+    modifier: Modifier = Modifier,
     code: AnnotatedString,
     language: String? = null,
-    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var showCopiedToast by remember { mutableStateOf(false) }
-    
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -75,7 +75,7 @@ fun CodeBlock(
                                 color = Primary
                             )
                         }
-                        
+
                         // Copy button
                         IconButton(
                             onClick = {
@@ -97,7 +97,7 @@ fun CodeBlock(
                     }
                 }
             }
-            
+
             // Code content
             Surface(
                 color = Color(0xFF2B2B2B),
@@ -121,7 +121,7 @@ fun CodeBlock(
             }
         }
     }
-    
+
     // Show copied toast
     if (showCopiedToast) {
         LaunchedEffect(Unit) {

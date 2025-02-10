@@ -7,7 +7,13 @@ import android.net.Uri
 import android.widget.Toast
 
 object EmailUtils {
-    fun sendEmail(context: Context, to: String, subject: String, body: String, isHtml: Boolean = false) {
+    fun sendEmail(
+        context: Context,
+        to: String,
+        subject: String,
+        body: String,
+        isHtml: Boolean = false
+    ) {
         try {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
                 data = Uri.parse("mailto:") // only email apps should handle this
@@ -21,12 +27,16 @@ object EmailUtils {
             }
 
             if (intent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(Intent.createChooser(intent, "Send email using").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                context.startActivity(
+                    Intent.createChooser(intent, "Send email using")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
             } else {
                 // Try Gmail specific intent
                 val gmailIntent = Intent(Intent.ACTION_VIEW).apply {
                     setPackage("com.google.android.gm")
-                    data = Uri.parse("mailto:$to?subject=${Uri.encode(subject)}&body=${Uri.encode(body)}")
+                    data =
+                        Uri.parse("mailto:$to?subject=${Uri.encode(subject)}&body=${Uri.encode(body)}")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 try {

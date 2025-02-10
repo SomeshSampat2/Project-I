@@ -341,7 +341,7 @@ class SystemQueries {
         return responseChat.sendMessage(query).text ?: "Sorry, I couldn't process your request."
     }
 
-    suspend fun getIdentityResponse(): String {
+    fun getIdentityResponse(): String {
         // Standard identity response that covers everything
         val standardResponse = """
             I'm Project I, your AI Agent created by Somesh Sampat at Innovate Labs. I help you get things done through natural conversations - whether it's making calls, sending messages, booking rides, or handling emails. I'm designed to make your daily tasks easier and more convenient. Just tell me what you need!
