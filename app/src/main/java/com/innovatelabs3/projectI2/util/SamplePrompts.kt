@@ -41,7 +41,7 @@ object SamplePrompts {
         ),
         Suggestion(
             title = "Social",
-            prompt = "Open Instagram profile of Virat Kohli"
+            prompt = "Open Instagram profile of @virat.kohli"
         ),
 
         // File Management
@@ -51,7 +51,7 @@ object SamplePrompts {
         ),
         Suggestion(
             title = "Documents",
-            prompt = "Find all images from last month's trip"
+            prompt = "find if the file named aadhar present in my phone"
         ),
 
         // Shopping & Payments
@@ -61,7 +61,7 @@ object SamplePrompts {
         ),
         Suggestion(
             title = "Payment",
-            prompt = "Send 500 rupees to Amit through PhonePe"
+            prompt = "Send 500 rupees to amitbahl@ybl through PhonePe"
         ),
 
         // Creative & Writing

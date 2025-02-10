@@ -29,7 +29,7 @@ fun SuggestionItem(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .heightIn(min = 120.dp),
+            .height(90.dp),
         colors = CardDefaults.cardColors(
             containerColor = color.copy(alpha = 0.1f)
         ),
@@ -40,8 +40,9 @@ fun SuggestionItem(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(12.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -80,7 +81,7 @@ fun SuggestionItem(
                     ),
                     contentDescription = null,
                     tint = color,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 
                 Text(
@@ -95,9 +96,9 @@ fun SuggestionItem(
             
             Text(
                 text = suggestion.prompt,
-                style = MaterialTheme.typography.bodySmall.copy(
+                style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = OpenSansFont,
-                    lineHeight = 18.sp
+                    lineHeight = 16.sp
                 ),
                 color = Color.Black,
                 maxLines = 2,
