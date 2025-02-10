@@ -28,7 +28,8 @@ fun SuggestionItem(
     Card(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .heightIn(min = 120.dp),
         colors = CardDefaults.cardColors(
             containerColor = color.copy(alpha = 0.1f)
         ),
@@ -38,8 +39,9 @@ fun SuggestionItem(
     ) {
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.Start
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -48,6 +50,19 @@ fun SuggestionItem(
                 Icon(
                     painter = painterResource(
                         id = when (suggestion.title) {
+                            "Make Call" -> R.drawable.ic_call
+                            "WhatsApp" -> R.drawable.ic_whatsapp
+                            "Email" -> R.drawable.ic_email
+                            "Contact" -> R.drawable.ic_contacts
+                            "Directions" -> R.drawable.ic_directions
+                            "Book Ride" -> R.drawable.ic_car
+                            "YouTube" -> R.drawable.ic_video
+                            "Music" -> R.drawable.ic_audio
+                            "Social" -> R.drawable.ic_social
+                            "Find Files" -> R.drawable.ic_search
+                            "Documents" -> R.drawable.ic_document
+                            "Shopping" -> R.drawable.ic_shopping
+                            "Payment" -> R.drawable.ic_payment
                             "Get Creative" -> R.drawable.ic_creative
                             "Code Help" -> R.drawable.ic_code
                             "Tech Trends" -> R.drawable.ic_trending
@@ -78,8 +93,6 @@ fun SuggestionItem(
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
             Text(
                 text = suggestion.prompt,
                 style = MaterialTheme.typography.bodySmall.copy(
@@ -88,7 +101,8 @@ fun SuggestionItem(
                 ),
                 color = Color.Black,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
         }
     }

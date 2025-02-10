@@ -2,6 +2,68 @@ package com.innovatelabs3.projectI2.util
 
 object SamplePrompts {
     val allSuggestions = listOf(
+        // Phone & Communication
+        Suggestion(
+            title = "Make Call",
+            prompt = "Call Mom on her mobile"
+        ),
+        Suggestion(
+            title = "WhatsApp",
+            prompt = "Send a WhatsApp message to Rahul saying I'll be late by 10 minutes"
+        ),
+        Suggestion(
+            title = "Email",
+            prompt = "Send an email to team@company.com about the project status"
+        ),
+        Suggestion(
+            title = "Contact",
+            prompt = "Save a new contact for Dr. Sharma with number 9876543210"
+        ),
+
+        // Navigation & Travel
+        Suggestion(
+            title = "Directions",
+            prompt = "Show me directions to the nearest hospital"
+        ),
+        Suggestion(
+            title = "Book Ride",
+            prompt = "Book an Uber to Bangalore Airport"
+        ),
+
+        // Entertainment & Media
+        Suggestion(
+            title = "YouTube",
+            prompt = "Search for latest Bollywood movie trailers on YouTube"
+        ),
+        Suggestion(
+            title = "Music",
+            prompt = "Play AR Rahman songs on Spotify"
+        ),
+        Suggestion(
+            title = "Social",
+            prompt = "Open Instagram profile of Virat Kohli"
+        ),
+
+        // File Management
+        Suggestion(
+            title = "Find Files",
+            prompt = "Search for PDF files related to project presentation"
+        ),
+        Suggestion(
+            title = "Documents",
+            prompt = "Find all images from last month's trip"
+        ),
+
+        // Shopping & Payments
+        Suggestion(
+            title = "Shopping",
+            prompt = "Search for wireless earphones on Flipkart"
+        ),
+        Suggestion(
+            title = "Payment",
+            prompt = "Send 500 rupees to Amit through PhonePe"
+        ),
+
         // Creative & Writing
         Suggestion(
             title = "Story Writing",
@@ -83,8 +145,6 @@ object SamplePrompts {
         )
     )
 
-    val suggestions: List<Suggestion>
-        get() = allSuggestions.shuffled().take(4)
 }
 
 data class Suggestion(
