@@ -83,7 +83,7 @@ fun SuggestionItem(
                     tint = color,
                     modifier = Modifier.size(18.dp)
                 )
-                
+
                 Text(
                     text = suggestion.title,
                     style = MaterialTheme.typography.titleSmall.copy(
@@ -93,7 +93,7 @@ fun SuggestionItem(
                     color = color
                 )
             }
-            
+
             Text(
                 text = suggestion.prompt,
                 style = MaterialTheme.typography.bodyMedium.copy(

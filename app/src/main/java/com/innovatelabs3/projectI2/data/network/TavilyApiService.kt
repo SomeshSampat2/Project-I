@@ -34,5 +34,4 @@ data class SearchResult(
     val url: String,
     val content: String,
     val score: Double,
-    val published_date: String?
-) 
+)

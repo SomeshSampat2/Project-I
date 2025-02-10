@@ -26,6 +26,7 @@ import com.innovatelabs3.projectI2.R
 import com.innovatelabs3.projectI2.utils.FileSearchResult
 import com.innovatelabs3.projectI2.utils.FileType
 import java.io.File
+import java.util.Locale
 
 private fun openFileLocation(context: Context, path: String) {
     try {
@@ -36,7 +37,11 @@ private fun openFileLocation(context: Context, path: String) {
         try {
             val intent = Intent().apply {
                 action = Intent.ACTION_VIEW
-                data = Uri.parse("content://com.android.externalstorage.documents/document/primary:${getRelativePath(folder)}")
+                data = Uri.parse(
+                    "content://com.android.externalstorage.documents/document/primary:${
+                        getRelativePath(folder)
+                    }"
+                )
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
@@ -99,11 +104,19 @@ fun FileSearchResults(results: List<FileSearchResult>) {
             groupedResults.forEach { (type, files) ->
                 Column {
                     Text(
-                        text = "${type.name.lowercase().capitalize()} Files",
+                        text = "${
+                            type.name.lowercase()
+                                .replaceFirstChar {
+                                    if (it.isLowerCase())
+                                        it.titlecase(Locale.getDefault())
+                                    else 
+                                        it.toString() 
+                                }
+                        } Files",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
                     )
-                    
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -145,7 +158,7 @@ private fun EmptySearchResult() {
 @Composable
 private fun ImageGrid(images: List<FileSearchResult>) {
     val context = LocalContext.current
-    
+
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(8.dp),
@@ -182,9 +195,9 @@ private fun ImageGrid(images: List<FileSearchResult>) {
                                 .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
                         )
-                        
+
                         Spacer(modifier = Modifier.width(12.dp))
-                        
+
                         // Text Content
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -218,7 +231,7 @@ private fun ImageGrid(images: List<FileSearchResult>) {
                             }
                         }
                     }
-                    
+
                     // Add button
                     TextButton(
                         onClick = { openFileLocation(context, image.path) },
@@ -247,7 +260,7 @@ private fun ImageGrid(images: List<FileSearchResult>) {
 @Composable
 private fun VideoList(videos: List<FileSearchResult>) {
     val context = LocalContext.current
-    
+
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(8.dp),
@@ -289,9 +302,9 @@ private fun VideoList(videos: List<FileSearchResult>) {
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.width(12.dp))
-                        
+
                         // Text Content
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -325,7 +338,7 @@ private fun VideoList(videos: List<FileSearchResult>) {
                             }
                         }
                     }
-                    
+
                     // Add button
                     TextButton(
                         onClick = { openFileLocation(context, video.path) },
@@ -354,7 +367,7 @@ private fun VideoList(videos: List<FileSearchResult>) {
 @Composable
 private fun AudioList(audioFiles: List<FileSearchResult>) {
     val context = LocalContext.current
-    
+
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(8.dp),
@@ -396,9 +409,9 @@ private fun AudioList(audioFiles: List<FileSearchResult>) {
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.width(12.dp))
-                        
+
                         // Text Content
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -432,7 +445,7 @@ private fun AudioList(audioFiles: List<FileSearchResult>) {
                             }
                         }
                     }
-                    
+
                     // Add button
                     TextButton(
                         onClick = { openFileLocation(context, audio.path) },
@@ -461,7 +474,7 @@ private fun AudioList(audioFiles: List<FileSearchResult>) {
 @Composable
 private fun PdfList(pdfs: List<FileSearchResult>) {
     val context = LocalContext.current
-    
+
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(8.dp),
@@ -502,9 +515,9 @@ private fun PdfList(pdfs: List<FileSearchResult>) {
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.width(12.dp))
-                        
+
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = pdf.name,
@@ -537,7 +550,7 @@ private fun PdfList(pdfs: List<FileSearchResult>) {
                             }
                         }
                     }
-                    
+
                     TextButton(
                         onClick = { openFileLocation(context, pdf.path) },
                         modifier = Modifier
@@ -565,7 +578,7 @@ private fun PdfList(pdfs: List<FileSearchResult>) {
 @Composable
 private fun DocumentList(documents: List<FileSearchResult>) {
     val context = LocalContext.current
-    
+
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(8.dp),
@@ -606,9 +619,9 @@ private fun DocumentList(documents: List<FileSearchResult>) {
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.width(12.dp))
-                        
+
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = document.name,
@@ -641,7 +654,7 @@ private fun DocumentList(documents: List<FileSearchResult>) {
                             }
                         }
                     }
-                    
+
                     TextButton(
                         onClick = { openFileLocation(context, document.path) },
                         modifier = Modifier

@@ -18,32 +18,36 @@ enum class FileType {
 object FileSearchUtils {
     fun searchFiles(context: Context, query: String): List<FileSearchResult> {
         val results = mutableListOf<FileSearchResult>()
-        
+
         // Search for Images
         searchImages(context, query, results)
-        
+
         // Search for Videos
         searchVideos(context, query, results)
-        
+
         // Search for Audio
         searchAudio(context, query, results)
-        
+
         // Search for Documents
         searchDocuments(context, query, results)
 
         return results
     }
 
-    private fun searchImages(context: Context, query: String, results: MutableList<FileSearchResult>) {
+    private fun searchImages(
+        context: Context,
+        query: String,
+        results: MutableList<FileSearchResult>
+    ) {
         val projection = arrayOf(
             MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.DATA,
             MediaStore.Images.Media._ID
         )
-        
+
         val selection = "${MediaStore.Images.Media.DISPLAY_NAME} LIKE ?"
         val selectionArgs = arrayOf("%$query%")
-        
+
         context.contentResolver.query(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
             projection,
@@ -53,7 +57,7 @@ object FileSearchUtils {
         )?.use { cursor ->
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
             val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-            
+
             while (cursor.moveToNext()) {
                 val name = cursor.getString(nameColumn)
                 val path = cursor.getString(pathColumn)
@@ -62,15 +66,19 @@ object FileSearchUtils {
         }
     }
 
-    private fun searchVideos(context: Context, query: String, results: MutableList<FileSearchResult>) {
+    private fun searchVideos(
+        context: Context,
+        query: String,
+        results: MutableList<FileSearchResult>
+    ) {
         val projection = arrayOf(
             MediaStore.Video.Media.DISPLAY_NAME,
             MediaStore.Video.Media.DATA
         )
-        
+
         val selection = "${MediaStore.Video.Media.DISPLAY_NAME} LIKE ?"
         val selectionArgs = arrayOf("%$query%")
-        
+
         context.contentResolver.query(
             MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
             projection,
@@ -80,7 +88,7 @@ object FileSearchUtils {
         )?.use { cursor ->
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
             val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
-            
+
             while (cursor.moveToNext()) {
                 val name = cursor.getString(nameColumn)
                 val path = cursor.getString(pathColumn)
@@ -89,15 +97,19 @@ object FileSearchUtils {
         }
     }
 
-    private fun searchAudio(context: Context, query: String, results: MutableList<FileSearchResult>) {
+    private fun searchAudio(
+        context: Context,
+        query: String,
+        results: MutableList<FileSearchResult>
+    ) {
         val projection = arrayOf(
             MediaStore.Audio.Media.DISPLAY_NAME,
             MediaStore.Audio.Media.DATA
         )
-        
+
         val selection = "${MediaStore.Audio.Media.DISPLAY_NAME} LIKE ?"
         val selectionArgs = arrayOf("%$query%")
-        
+
         context.contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
             projection,
@@ -107,7 +119,7 @@ object FileSearchUtils {
         )?.use { cursor ->
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
             val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-            
+
             while (cursor.moveToNext()) {
                 val name = cursor.getString(nameColumn)
                 val path = cursor.getString(pathColumn)
@@ -116,7 +128,11 @@ object FileSearchUtils {
         }
     }
 
-    private fun searchDocuments(context: Context, query: String, results: MutableList<FileSearchResult>) {
+    private fun searchDocuments(
+        context: Context,
+        query: String,
+        results: MutableList<FileSearchResult>
+    ) {
         // Define projections
         val projection = arrayOf(
             MediaStore.Files.FileColumns.DISPLAY_NAME,
@@ -130,8 +146,8 @@ object FileSearchUtils {
     }
 
     private fun searchPdfFiles(
-        context: Context, 
-        query: String, 
+        context: Context,
+        query: String,
         results: MutableList<FileSearchResult>,
         projection: Array<String>
     ) {
@@ -157,13 +173,14 @@ object FileSearchUtils {
                 selectionArgs,
                 null
             )?.use { cursor ->
-                val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                val nameColumn =
+                    cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
                 val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
-                
+
                 while (cursor.moveToNext()) {
                     val name = cursor.getString(nameColumn)
                     val path = cursor.getString(pathColumn)
-                    
+
                     // Additional check for PDF extension
                     if (name.lowercase().endsWith(".pdf")) {
                         results.add(FileSearchResult(name, path, FileType.PDF))
@@ -188,12 +205,17 @@ object FileSearchUtils {
         }
     }
 
-    private fun searchDirectoryForPdfs(directory: File, query: String, results: MutableList<FileSearchResult>) {
+    private fun searchDirectoryForPdfs(
+        directory: File,
+        query: String,
+        results: MutableList<FileSearchResult>
+    ) {
         directory.listFiles()?.forEach { file ->
             if (file.isDirectory) {
                 searchDirectoryForPdfs(file, query, results)
-            } else if (file.name.lowercase().endsWith(".pdf") && 
-                      file.name.lowercase().contains(query.lowercase())) {
+            } else if (file.name.lowercase().endsWith(".pdf") &&
+                file.name.lowercase().contains(query.lowercase())
+            ) {
                 results.add(
                     FileSearchResult(
                         name = file.name,
@@ -206,8 +228,8 @@ object FileSearchUtils {
     }
 
     private fun searchOtherDocuments(
-        context: Context, 
-        query: String, 
+        context: Context,
+        query: String,
         results: MutableList<FileSearchResult>,
         projection: Array<String>
     ) {
@@ -217,11 +239,12 @@ object FileSearchUtils {
             "text/plain"
         )
 
-        val mimeTypeSelection = mimeTypes.joinToString(" OR ") { 
-            "${MediaStore.Files.FileColumns.MIME_TYPE} = ?" 
+        val mimeTypeSelection = mimeTypes.joinToString(" OR ") {
+            "${MediaStore.Files.FileColumns.MIME_TYPE} = ?"
         }
-        
-        val selection = "(${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE ?) AND ($mimeTypeSelection)"
+
+        val selection =
+            "(${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE ?) AND ($mimeTypeSelection)"
         val selectionArgs = arrayOf("%$query%") + mimeTypes
 
         context.contentResolver.query(
@@ -233,19 +256,20 @@ object FileSearchUtils {
         )?.use { cursor ->
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
             val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
-            val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
-            
+            val mimeTypeColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
+
             while (cursor.moveToNext()) {
                 val name = cursor.getString(nameColumn)
                 val path = cursor.getString(pathColumn)
                 val mimeType = cursor.getString(mimeTypeColumn)
-                
+
                 val type = when {
                     mimeType.contains("pdf") -> FileType.PDF
                     mimeType.contains("word") || mimeType.contains("text") -> FileType.DOCUMENT
                     else -> FileType.OTHER
                 }
-                
+
                 results.add(FileSearchResult(name, path, type))
             }
         }

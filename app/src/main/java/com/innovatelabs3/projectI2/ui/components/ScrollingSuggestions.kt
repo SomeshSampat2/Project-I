@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import kotlinx.coroutines.coroutineScope
+import androidx.compose.runtime.derivedStateOf
 
 @Composable
 fun ScrollingSuggestions(
@@ -50,15 +51,15 @@ fun ScrollingSuggestions(
 
     val firstRowState = rememberLazyListState()
     val secondRowState = rememberLazyListState()
-    
+
     // Reduce list size for better performance
-    val firstRowItems = remember { 
+    val firstRowItems = remember {
         List(40) { SamplePrompts.allSuggestions.take(8)[it % 8] }
     }
-    val secondRowItems = remember { 
+    val secondRowItems = remember {
         List(40) { SamplePrompts.allSuggestions.drop(8)[it % 8] }
     }
-    
+
     // Create fixed color map
     val suggestionColors = remember {
         val shuffledColors = colors.shuffled()
@@ -66,25 +67,38 @@ fun ScrollingSuggestions(
             suggestion to shuffledColors[index % shuffledColors.size]
         }.toMap()
     }
-    
+
     // Start second row from the end
     LaunchedEffect(Unit) {
         secondRowState.scrollToItem(secondRowItems.size - 8)
     }
-    
+
+    // Use derivedStateOf for scroll position checks
+    val shouldResetFirstRow by remember {
+        derivedStateOf {
+            firstRowState.firstVisibleItemIndex > firstRowItems.size - 10
+        }
+    }
+
+    val shouldResetSecondRow by remember {
+        derivedStateOf {
+            secondRowState.firstVisibleItemIndex < 5
+        }
+    }
+
     // Optimize scroll position reset
-    LaunchedEffect(firstRowState.firstVisibleItemIndex) {
-        if (firstRowState.firstVisibleItemIndex > firstRowItems.size - 10) {
+    LaunchedEffect(shouldResetFirstRow) {
+        if (shouldResetFirstRow) {
             firstRowState.animateScrollToItem(5)
         }
     }
-    
-    LaunchedEffect(secondRowState.firstVisibleItemIndex) {
-        if (secondRowState.firstVisibleItemIndex < 5) {
+
+    LaunchedEffect(shouldResetSecondRow) {
+        if (shouldResetSecondRow) {
             secondRowState.animateScrollToItem(secondRowItems.size - 10)
         }
     }
-    
+
     // Optimize auto-scrolling animation
     LaunchedEffect(Unit) {
         while (true) {

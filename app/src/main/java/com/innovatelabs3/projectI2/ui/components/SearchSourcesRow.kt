@@ -57,7 +57,7 @@ fun SearchSourcesRow(
 private fun SearchSourceCard(source: SearchSource) {
     val uriHandler = LocalUriHandler.current
     val colors = LocalAppColors.current
-    
+
     Card(
         modifier = Modifier
             .width(300.dp)
@@ -110,9 +110,9 @@ private fun SearchSourceCard(source: SearchSource) {
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     Spacer(modifier = Modifier.width(12.dp))
-                    
+
                     // Source badge
                     Surface(
                         shape = RoundedCornerShape(8.dp),
@@ -142,9 +142,9 @@ private fun SearchSourceCard(source: SearchSource) {
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 // Preview text
                 Text(
                     text = source.content,

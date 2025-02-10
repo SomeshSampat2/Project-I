@@ -10,7 +10,11 @@ import androidx.core.content.ContextCompat
 
 object CallUtils {
     fun makePhoneCall(context: Context, phoneNumber: String, onPermissionNeeded: () -> Unit) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CALL_PHONE
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             initiateCall(context, phoneNumber)
         } else {
             onPermissionNeeded()
@@ -25,7 +29,8 @@ object CallUtils {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(context, "Error making call: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error making call: ${e.localizedMessage}", Toast.LENGTH_SHORT)
+                .show()
         }
     }
 

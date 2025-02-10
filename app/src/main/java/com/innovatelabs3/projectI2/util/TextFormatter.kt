@@ -4,12 +4,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
+import com.innovatelabs3.projectI2.ui.theme.OpenSansFont
 
 data class TextSegment(
     val text: AnnotatedString,
@@ -88,7 +88,7 @@ object TextFormatter {
         // Base style for code
         addStyle(
             SpanStyle(
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontFamily = OpenSansFont,
                 fontSize = 14.sp,
                 color = defaultTextColor,
                 background = Color(0xFF2B2B2B)  // IntelliJ dark theme background
@@ -192,6 +192,7 @@ object TextFormatter {
     private fun formatNonCodeText(text: String): AnnotatedString = buildAnnotatedString {
         var currentPosition = 0
         var remainingText = text
+        val fontFamily = OpenSansFont
 
         // Enhanced bullet points with indentation
         remainingText = remainingText.replace(Regex("^(\\s*)[-*+]\\s", RegexOption.MULTILINE)) { match ->
@@ -210,36 +211,36 @@ object TextFormatter {
             val content = match.groupValues[2]
 
             when (tag) {
-                "h1" -> withStyle(SpanStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)) {
+                "h1" -> withStyle(SpanStyle(fontFamily = fontFamily, fontSize = 24.sp, fontWeight = FontWeight.Bold)) {
                     append(content)
                     append("\n")
                 }
-                "h2" -> withStyle(SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)) {
+                "h2" -> withStyle(SpanStyle(fontFamily = fontFamily, fontSize = 20.sp, fontWeight = FontWeight.Bold)) {
                     append(content)
                     append("\n")
                 }
-                "h3" -> withStyle(SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)) {
+                "h3" -> withStyle(SpanStyle(fontFamily = fontFamily, fontSize = 18.sp, fontWeight = FontWeight.Bold)) {
                     append(content)
                     append("\n")
                 }
-                "b", "strong" -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                "b", "strong" -> withStyle(SpanStyle(fontFamily = fontFamily, fontWeight = FontWeight.Bold)) {
                     append(content)
                 }
-                "i", "em" -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                "i", "em" -> withStyle(SpanStyle(fontFamily = fontFamily, fontStyle = FontStyle.Italic)) {
                     append(content)
                 }
-                "u" -> withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                "u" -> withStyle(SpanStyle(fontFamily = fontFamily, textDecoration = TextDecoration.Underline)) {
                     append(content)
                 }
                 "code" -> withStyle(SpanStyle(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = OpenSansFont,
                     background = Color(0xFF2B2B2B),
                     color = Color(0xFFA9B7C6)
                 )) {
                     append(content)
                 }
                 "pre" -> withStyle(SpanStyle(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = OpenSansFont,
                     letterSpacing = 0.sp
                 )) {
                     append(content)
@@ -261,6 +262,7 @@ object TextFormatter {
             val boldText = match.groupValues[1]
             withStyle(
                 SpanStyle(
+                    fontFamily = fontFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 )
