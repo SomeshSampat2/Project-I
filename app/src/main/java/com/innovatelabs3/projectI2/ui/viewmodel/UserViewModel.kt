@@ -168,6 +168,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                                     }
                                 } else {
                                     addAssistantMessage("I need permission to access contacts to find ${content.contactName}'s number. Please grant contacts permission in settings.")
+                                    _requestPermission.value = "contacts"
                                 }
                             } else {
                                 addAssistantMessage("Sorry, I couldn't understand who you want to message.")
