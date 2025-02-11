@@ -63,6 +63,9 @@ class MainActivity : ComponentActivity() {
         viewModel.onPermissionResult("call", isGranted)
     }
 
+    private val contactsPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
+
     private fun getRequiredPermissions(): Array<String> {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14
             arrayOf(
@@ -119,6 +122,12 @@ class MainActivity : ComponentActivity() {
 
                             "contacts" -> {
                                 // ... existing contacts permission handling ...
+                                contactsPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.READ_CONTACTS,
+                                        Manifest.permission.WRITE_CONTACTS
+                                    )
+                                )
                             }
                         }
                         viewModel.clearPermissionRequest()
@@ -161,16 +170,7 @@ fun MainScreen(viewModel: UserViewModel) {
 
     // Permission request launcher
     val requestPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            // Permission is granted, you can proceed with showing notifications
-            GenericUtils.showToast(context, "Notification permission granted")
-        } else {
-            // Explain that the notification permission is not available
-            GenericUtils.showToast(context, "Notification permission denied")
-        }
-    }
+        ActivityResultContracts.RequestPermission()) {}
 
     // Request notification permission on Android 13+
     LaunchedEffect(key1 = lifecycleOwner.lifecycle, key2 = context) {
