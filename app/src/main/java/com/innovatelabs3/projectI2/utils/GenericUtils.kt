@@ -439,5 +439,33 @@ class GenericUtils {
                 }
             }
         }
+
+        fun openLinkedInProfile(context: Context, profileId: String) {
+            try {
+                // Construct the URLs for the LinkedIn app and the web
+                val appUri = Uri.parse("linkedin://in/$profileId")
+                val webUri = Uri.parse("https://www.linkedin.com/in/$profileId")
+
+                // Create an intent for the LinkedIn app
+                val appIntent = Intent(Intent.ACTION_VIEW, appUri).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                
+                // Check if LinkedIn app is installed
+                if (appIntent.resolveActivity(context.packageManager) != null) {
+                    context.startActivity(appIntent)
+                    showToast(context, "Opening LinkedIn profile...")
+                } else {
+                    // Fallback: open in browser
+                    val webIntent = Intent(Intent.ACTION_VIEW, webUri).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(webIntent)
+                    showToast(context, "Opening LinkedIn profile in browser...")
+                }
+            } catch (e: Exception) {
+                showToast(context, "Couldn't open LinkedIn profile")
+            }
+        }
     }
 } 

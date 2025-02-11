@@ -25,6 +25,7 @@ sealed class QueryType {
     object SearchFiles : QueryType()
     object SendEmail : QueryType()
     object MakeCall : QueryType()
+    object OpenLinkedInProfile : QueryType()
 }
 
 class SystemQueries {
@@ -137,6 +138,7 @@ class SystemQueries {
             SEARCH_FILES - if asking to find or search for files, documents, photos, or videos on the device
             SEND_EMAIL - if asking to send an email
             MAKE_CALL - if asking to call someone or dial a phone number
+            OPEN_LINKEDIN_PROFILE - if asking to open or view a LinkedIn profile
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -181,6 +183,7 @@ class SystemQueries {
             "Dial +1234567890" -> MAKE_CALL
             "Make a call to Mary" -> MAKE_CALL
             "Phone Dad" -> MAKE_CALL
+            "Open profile of akshay gund on linkedin" -> OPEN_LINKEDIN_PROFILE
             
             Query: "$query"
         """.trimIndent()
@@ -203,6 +206,7 @@ class SystemQueries {
             "SEARCH_FILES" -> QueryType.SearchFiles
             "SEND_EMAIL" -> QueryType.SendEmail
             "MAKE_CALL" -> QueryType.MakeCall
+            "OPEN_LINKEDIN_PROFILE" -> QueryType.OpenLinkedInProfile
             else -> QueryType.General
         }
     }
@@ -503,6 +507,12 @@ class SystemQueries {
 
     enum class NotificationPriority {
         HIGH, DEFAULT, LOW
+    }
+
+    fun extractLinkedInUsername(query: String): String {
+        // Extract profile name from queries like "visit profile of akshay gund on linkedin"
+        val regex = Regex("(?i).*(?:profile.*of|view)\\s+([\\w\\s.]+?)(?:\\s+on\\s+linkedin|$)")
+        return regex.find(query)?.groupValues?.get(1)?.trim()?.lowercase()?.replace(" ", "") ?: ""
     }
 }
 
