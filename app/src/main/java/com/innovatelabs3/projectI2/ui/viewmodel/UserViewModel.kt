@@ -327,6 +327,15 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                                 }
                             }
                         }
+                        is QueryType.OpenLinkedInProfile -> {
+                            val profileId = systemQueries.extractLinkedInUsername(message)
+                            if (profileId.isNotEmpty()) {
+                                GenericUtils.openLinkedInProfile(context, profileId)
+                                addAssistantMessage("Opening LinkedIn profile of $profileId")
+                            } else {
+                                addAssistantMessage("I couldn't understand whose LinkedIn profile you want to view. Please provide a name.")
+                            }
+                        }
                         else -> {
                             val response = systemQueries.handleGeneralQuery(message)
                             addAssistantMessage(response)
