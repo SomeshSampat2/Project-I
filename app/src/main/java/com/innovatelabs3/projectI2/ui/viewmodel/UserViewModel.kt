@@ -342,6 +342,23 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                                 addAssistantMessage("I couldn't understand whose LinkedIn profile you want to view. Please provide a name.")
                             }
                         }
+                        is QueryType.ScrapDataFromWebUrl -> {
+                            _isLoading.value = true
+                            try {
+                                val webUrl = systemQueries.extractUrl(message)
+                                if (webUrl.isNotEmpty()) {
+                                    addAssistantMessage("Let me check that website for you...")
+                                    val summary = systemQueries.scrapeWebsite(webUrl)
+                                    addAssistantMessage(summary)
+                                } else {
+                                    addAssistantMessage("I couldn't find or construct a valid URL from your message. Please provide a specific website URL or clarify which website you want me to check.")
+                                }
+                            } catch (e: Exception) {
+                                addAssistantMessage("Sorry, I encountered an error while trying to access the website: ${e.localizedMessage}")
+                            } finally {
+                                _isLoading.value = false
+                            }
+                        }
                         else -> {
                             val response = systemQueries.handleGeneralQuery(message)
                             addAssistantMessage(response)
