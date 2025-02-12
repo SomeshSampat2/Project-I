@@ -5,28 +5,19 @@ import com.google.ai.client.generativeai.type.BlockThreshold
 import com.google.ai.client.generativeai.type.HarmCategory
 import com.google.ai.client.generativeai.type.SafetySetting
 import com.innovatelabs3.projectI2.BuildConfig
+import com.innovatelabs3.projectI2.domain.models.CallContent
+import com.innovatelabs3.projectI2.domain.models.ContactSaveContent
+import com.innovatelabs3.projectI2.domain.models.DirectionsContent
+import com.innovatelabs3.projectI2.domain.models.EmailContent
+import com.innovatelabs3.projectI2.domain.models.GoogleMeetContent
+import com.innovatelabs3.projectI2.domain.models.InstagramProfileContent
+import com.innovatelabs3.projectI2.domain.models.PhonePePayment
+import com.innovatelabs3.projectI2.domain.models.ProductSearchContent
+import com.innovatelabs3.projectI2.domain.models.SpotifySearchContent
+import com.innovatelabs3.projectI2.domain.models.UberRideContent
+import com.innovatelabs3.projectI2.domain.models.WhatsAppMessageContent
+import com.innovatelabs3.projectI2.domain.models.YouTubeSearchContent
 
-sealed class QueryType {
-    object ShowToast : QueryType()
-    object ShowSnackbar : QueryType()
-    object ShowNotification : QueryType()
-    object OpenWhatsApp : QueryType()
-    object SendWhatsAppMessage : QueryType()
-    object Identity : QueryType()
-    object General : QueryType()
-    object ShowDirections : QueryType()
-    object SearchYouTube : QueryType()
-    object OpenInstagramProfile : QueryType()
-    object JoinGoogleMeet : QueryType()
-    object SearchSpotify : QueryType()
-    object BookUber : QueryType()
-    object SearchProduct : QueryType()
-    object SaveContact : QueryType()
-    object SearchFiles : QueryType()
-    object SendEmail : QueryType()
-    object MakeCall : QueryType()
-    object OpenLinkedInProfile : QueryType()
-}
 
 class SystemQueries {
     // For quick analysis and simple extractions
@@ -55,65 +46,6 @@ class SystemQueries {
 
     private val analyzerChat = analyzerModel.startChat()
     private val responseChat = responseModel.startChat()
-
-    data class WhatsAppMessageContent(
-        val contactName: String = "",
-        val phoneNumber: String = "",
-        val message: String = ""
-    )
-
-    data class DirectionsContent(
-        val destination: String
-    )
-
-    data class YouTubeSearchContent(
-        val searchQuery: String
-    )
-
-    data class InstagramProfileContent(
-        val username: String
-    )
-
-    data class GoogleMeetContent(
-        val meetingCode: String
-    )
-
-    data class SpotifySearchContent(
-        val query: String,
-        val type: String = "track" // "track" or "artist"
-    )
-
-    data class UberRideContent(
-        val destination: String
-    )
-
-    data class ProductSearchContent(
-        val query: String,
-        val platform: String = "flipkart" // "flipkart" or "amazon"
-    )
-
-    data class ContactSaveContent(
-        val name: String,
-        val phoneNumber: String
-    )
-
-    data class PhonePePayment(
-        val amount: String,
-        val recipientUpiId: String,
-        val recipientName: String = "Recipient"
-    )
-
-    data class EmailContent(
-        val to: String,
-        val subject: String = "",
-        val body: String = "",
-        val isHtml: Boolean = false
-    )
-
-    data class CallContent(
-        val contactName: String = "",
-        val phoneNumber: String = ""
-    )
 
     suspend fun analyzeQueryType(query: String): QueryType {
         val analysisPrompt = """
@@ -516,12 +448,12 @@ class SystemQueries {
     }
 }
 
-fun String.extractPhonePePaymentDetails(): SystemQueries.PhonePePayment? {
+fun String.extractPhonePePaymentDetails(): PhonePePayment? {
     val regex = """(?i)(?:pay|send)\s+(\d+)(?:\s+(?:rs|rupees))?\s+(?:to\s+)?([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+)(?:\s+(?:through|via|using|with)\s+phonepe)?""".toRegex()
     
     return regex.find(this)?.let { match ->
         val amount = match.groupValues[1]
         val upiId = match.groupValues[2]
-        SystemQueries.PhonePePayment(amount, upiId)
+        PhonePePayment(amount, upiId)
     }
 } 
