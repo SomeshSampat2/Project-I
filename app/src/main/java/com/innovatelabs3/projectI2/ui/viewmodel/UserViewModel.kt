@@ -29,6 +29,7 @@ import androidx.lifecycle.AndroidViewModel
 import com.innovatelabs3.projectI2.utils.FileSearchResult
 import com.innovatelabs3.projectI2.utils.PaymentUtils
 import com.innovatelabs3.projectI2.domain.extractPhonePePaymentDetails
+import com.innovatelabs3.projectI2.domain.models.PhonePePayment
 import com.innovatelabs3.projectI2.utils.EmailUtils
 import com.innovatelabs3.projectI2.utils.CallUtils
 import kotlinx.coroutines.delay
@@ -462,7 +463,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun handleSystemQuery(query: Any) {
         when (query) {
-            is SystemQueries.PhonePePayment -> {
+            is PhonePePayment -> {
                 PaymentUtils.openPhonePe(
                     context = context,
                     recipientUpiId = query.recipientUpiId,
