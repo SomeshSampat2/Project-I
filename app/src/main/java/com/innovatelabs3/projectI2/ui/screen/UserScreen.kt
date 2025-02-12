@@ -36,7 +36,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.AnimatedVisibility
 import com.innovatelabs3.projectI2.ui.components.GlobeIcon
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.graphics.graphicsLayer
 import com.innovatelabs3.projectI2.data.model.SearchSource
 import com.innovatelabs3.projectI2.domain.QueryType
@@ -45,22 +44,94 @@ import com.innovatelabs3.projectI2.ui.components.SearchSourcesRow
 import com.innovatelabs3.projectI2.util.WelcomePrompts
 import com.innovatelabs3.projectI2.ui.components.SuggestionsCard
 import com.innovatelabs3.projectI2.ui.components.TypewriterText
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import android.speech.RecognizerIntent
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.res.painterResource
+import com.innovatelabs3.projectI2.R
+import android.speech.SpeechRecognizer
+import android.os.Bundle
+import android.speech.RecognitionListener
+import com.innovatelabs3.projectI2.utils.GenericUtils
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun UserScreen(viewModel: UserViewModel) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val isLoading by viewModel.isLoading.collectAsState()
     val chatMessages by viewModel.chatMessages.collectAsState()
-    var command by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val isSearchMode by viewModel.searchMode.collectAsState()
     val searchSources by viewModel.searchSources.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
-    val placeholderText by remember {
-        mutableStateOf(WelcomePrompts.getRandomPrompt())
-    }
+    val placeholderText by remember { mutableStateOf(WelcomePrompts.getRandomPrompt()) }
     val lastQueryType by viewModel.lastQueryType.collectAsState()
+    val inputText by viewModel.inputText.collectAsState()
+    val context = LocalContext.current
+    val isListening = remember { mutableStateOf(false) }
+    
+    // Check if speech recognition is available
+    val isSpeechAvailable = remember {
+        SpeechRecognizer.isRecognitionAvailable(context)
+    }
+    
+    val speechRecognizer = remember { 
+        if (isSpeechAvailable) {
+            SpeechRecognizer.createSpeechRecognizer(context)
+        } else {
+            null
+        }
+    }
+
+    // Setup speech recognizer
+    DisposableEffect(speechRecognizer) {
+        val listener = object : RecognitionListener {
+            override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    viewModel.updateInputText(matches[0])
+                    // Auto send after voice input
+                    viewModel.processCommand(matches[0])
+                }
+                isListening.value = false
+            }
+
+            override fun onError(error: Int) {
+                val errorMessage = when (error) {
+                    SpeechRecognizer.ERROR_NO_MATCH -> "No speech detected"
+                    SpeechRecognizer.ERROR_NETWORK -> "Network error"
+                    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Permission needed"
+                    else -> "Error occurred"
+                }
+                GenericUtils.showToast(context, errorMessage)
+                isListening.value = false
+            }
+
+            override fun onReadyForSpeech(params: Bundle?) {
+                GenericUtils.showToast(context, "Listening...")
+            }
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {}
+            override fun onPartialResults(partialResults: Bundle?) {
+                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    viewModel.updateInputText(matches[0])
+                }
+            }
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        }
+
+        speechRecognizer?.setRecognitionListener(listener)
+
+        onDispose {
+            speechRecognizer?.destroy()
+        }
+    }
 
     LaunchedEffect(chatMessages.size) {
         if (chatMessages.isNotEmpty()) {
@@ -109,16 +180,16 @@ fun UserScreen(viewModel: UserViewModel) {
 
                     // Input TextField
                     OutlinedTextField(
-                        value = command,
-                        onValueChange = { command = it },
+                        value = inputText,
+                        onValueChange = { viewModel.updateInputText(it) },
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(min = 40.dp, max = 120.dp),
                         placeholder = {
                             Text(
-                                if (isSearchMode) "Search the web..." else placeholderText,
+                                text = if (isSearchMode) "Searchon web..." else placeholderText,
                                 color = TextSecondary.copy(alpha = 0.6f)
-                            )
+                                )
                         },
                         shape = RoundedCornerShape(20.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -138,16 +209,16 @@ fun UserScreen(viewModel: UserViewModel) {
                     // Send button with keyboard handling
                     IconButton(
                         onClick = {
-                            if (command.isNotBlank()) {
-                                viewModel.processCommand(command)
-                                command = ""
+                            if (inputText.isNotEmpty()) {
+                                viewModel.processCommand(inputText)
+                                viewModel.updateInputText("")
                                 keyboardController?.hide()
                             }
                         },
                         modifier = Modifier
                             .size(40.dp)
                             .background(
-                                color = if (command.isNotBlank()) Primary else Primary.copy(alpha = 0.1f),
+                                color = if (inputText.isNotEmpty()) Primary else Primary.copy(alpha = 0.1f),
                                 shape = CircleShape
                             )
                     ) {
@@ -155,7 +226,7 @@ fun UserScreen(viewModel: UserViewModel) {
                             imageVector = Icons.Default.Send,
                             contentDescription = "Send",
                             modifier = Modifier.size(20.dp),
-                            tint = if (command.isNotBlank()) Color.White else Primary
+                            tint = if (inputText.isNotEmpty()) Color.White else Primary
                         )
                     }
                 }
@@ -170,7 +241,7 @@ fun UserScreen(viewModel: UserViewModel) {
                 // Show suggestions when no messages
                 SuggestionsCard(
                     onSuggestionClick = { prompt ->
-                        command = prompt
+                        viewModel.updateInputText(prompt)
                     },
                     modifier = Modifier.align(Alignment.Center)
                 )
@@ -216,6 +287,40 @@ fun UserScreen(viewModel: UserViewModel) {
                         }
                     }
                 }
+            }
+
+            // Voice command FAB
+            FloatingActionButton(
+                onClick = {
+                    if (!isListening.value && isSpeechAvailable && speechRecognizer != null) {
+                        try {
+                            isListening.value = true
+                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+                            }
+                            speechRecognizer.startListening(intent)
+                        } catch (e: Exception) {
+                            isListening.value = false
+                            GenericUtils.showToast(context, "Error: ${e.localizedMessage}")
+                        }
+                    } else if (!isSpeechAvailable) {
+                        GenericUtils.showToast(context, "Speech recognition not available on this device")
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 140.dp, end = 16.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_mic),
+                    contentDescription = "Voice Command",
+                    tint = if (isListening.value) 
+                        MaterialTheme.colorScheme.error 
+                    else 
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
     }
