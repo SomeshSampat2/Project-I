@@ -31,6 +31,7 @@ import com.innovatelabs3.projectI2.utils.PaymentUtils
 import com.innovatelabs3.projectI2.domain.extractPhonePePaymentDetails
 import com.innovatelabs3.projectI2.utils.EmailUtils
 import com.innovatelabs3.projectI2.utils.CallUtils
+import kotlinx.coroutines.delay
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val context = application
@@ -84,6 +85,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     val searchResults: StateFlow<List<FileSearchResult>> = _searchResults.asStateFlow()
 
     private var pendingCall: CallDetails? = null
+
+    private val _inputText = MutableStateFlow("")
+    val inputText: StateFlow<String> = _inputText.asStateFlow()
 
     data class CallDetails(
         val number: String,
@@ -504,5 +508,19 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             // ... handle other permissions ...
         }
         _requestPermission.value = null
+    }
+
+    fun onVoiceInput(text: String) {
+        viewModelScope.launch {
+            _inputText.value = text
+            // Auto-send after voice input
+            delay(300) // Small delay for UI update
+            processCommand(text)
+            _inputText.value = "" // Clear input
+        }
+    }
+
+    fun updateInputText(text: String) {
+        _inputText.value = text
     }
 } 

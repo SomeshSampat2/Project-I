@@ -66,6 +66,16 @@ class MainActivity : ComponentActivity() {
     private val contactsPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
 
+    private val micPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            GenericUtils.showToast(this, "Voice input is now available")
+        } else {
+            GenericUtils.showToast(this, "Voice input requires microphone permission")
+        }
+    }
+
     private fun getRequiredPermissions(): Array<String> {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14
             arrayOf(
@@ -128,6 +138,10 @@ class MainActivity : ComponentActivity() {
                                         Manifest.permission.WRITE_CONTACTS
                                     )
                                 )
+                            }
+
+                            "microphone" -> {
+                                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
                         }
                         viewModel.clearPermissionRequest()
