@@ -97,4 +97,5 @@ dependencies {
 
     implementation(libs.generativeai)
     implementation libs.shimmer
+    implementation libs.jsoup
 } 

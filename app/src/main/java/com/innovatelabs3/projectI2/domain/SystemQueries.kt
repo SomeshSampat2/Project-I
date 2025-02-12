@@ -17,6 +17,8 @@ import com.innovatelabs3.projectI2.domain.models.SpotifySearchContent
 import com.innovatelabs3.projectI2.domain.models.UberRideContent
 import com.innovatelabs3.projectI2.domain.models.WhatsAppMessageContent
 import com.innovatelabs3.projectI2.domain.models.YouTubeSearchContent
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 
 
 class SystemQueries {
@@ -71,6 +73,7 @@ class SystemQueries {
             SEND_EMAIL - if asking to send an email
             MAKE_CALL - if asking to call someone or dial a phone number
             OPEN_LINKEDIN_PROFILE - if asking to open or view a LinkedIn profile
+            SUMMARIZE_WEBSITE - if asking to summarize a website with url
             
             Examples:
             "Show me directions to Central Park" -> SHOW_DIRECTIONS
@@ -116,6 +119,8 @@ class SystemQueries {
             "Make a call to Mary" -> MAKE_CALL
             "Phone Dad" -> MAKE_CALL
             "Open profile of akshay gund on linkedin" -> OPEN_LINKEDIN_PROFILE
+            "Summarize https://ai.google.dev/gemini-api/docs/text-generation?lang=rest" -> SUMMARIZE_WEBSITE
+            "What is in this website https://ai.google.dev" -> SUMMARIZE_WEBSITE
             
             Query: "$query"
         """.trimIndent()
@@ -139,6 +144,8 @@ class SystemQueries {
             "SEND_EMAIL" -> QueryType.SendEmail
             "MAKE_CALL" -> QueryType.MakeCall
             "OPEN_LINKEDIN_PROFILE" -> QueryType.OpenLinkedInProfile
+            "SUMMARIZE_WEBSITE" -> QueryType.ScrapDataFromWebUrl
+
             else -> QueryType.General
         }
     }
@@ -274,7 +281,18 @@ class SystemQueries {
     }
 
     suspend fun handleGeneralQuery(query: String): String {
-        return responseChat.sendMessage(query).text ?: "Sorry, I couldn't process your request."
+        return when (analyzeQueryType(query)) {
+            is QueryType.ScrapDataFromWebUrl -> {
+                val url = extractUrl(query)
+                if (url.isNotEmpty()) {
+                    scrapeWebsite(url)
+                } else {
+                    "I couldn't find a valid URL in your message. Please provide a website URL to summarize."
+                }
+            }
+            else -> responseChat.sendMessage(query).text 
+                ?: "Sorry, I couldn't process your request."
+        }
     }
 
     fun getIdentityResponse(): String {
@@ -445,6 +463,110 @@ class SystemQueries {
         // Extract profile name from queries like "visit profile of akshay gund on linkedin"
         val regex = Regex("(?i).*(?:profile.*of|view)\\s+([\\w\\s.]+?)(?:\\s+on\\s+linkedin|$)")
         return regex.find(query)?.groupValues?.get(1)?.trim()?.lowercase()?.replace(" ", "") ?: ""
+    }
+
+    suspend fun extractUrl(message: String): String {
+        val urlPrompt = """
+            Extract a valid URL from this text. If there's no URL, try to understand what website the user wants to view and construct its URL.
+            Only respond with the URL, nothing else.
+            
+            Examples:
+            Input: "Summarize this website: https://example.com"
+            Output: https://example.com
+            
+            Input: "What's on google's website"
+            Output: https://www.google.com
+            
+            Input: "Tell me about OpenAI"
+            Output: https://openai.com
+            
+            Text: "$message"
+        """.trimIndent()
+
+        return try {
+            val extractedUrl = analyzerChat.sendMessage(urlPrompt).text?.trim() ?: ""
+            if (extractedUrl.matches(Regex("^(https?://|www\\.).+\\..+"))) {
+                extractedUrl
+            } else {
+                ""
+            }
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    suspend fun scrapeWebsite(url: String): String {
+        return try {
+            // Add http:// if missing
+            val fullUrl = when {
+                url.startsWith("http") -> url
+                url.startsWith("www.") -> "https://$url"
+                else -> "https://$url"
+            }
+
+            // First try to get a quick summary using Gemini
+            val quickSummaryPrompt = """
+                Provide a well detailed summary of what can be found on this website: $fullUrl
+                Keep it natural and conversational, starting with "Here's what I found on that website:"
+                If you don't have information about this specific URL, provide a general overview of what the website is about.
+            """.trimIndent()
+
+            val quickSummary = responseChat.sendMessage(quickSummaryPrompt).text
+
+            // If we got a meaningful response, return it
+            if (!quickSummary.isNullOrBlank() && 
+                !quickSummary.contains("sorry", ignoreCase = true) && 
+                !quickSummary.contains("error", ignoreCase = true)) {
+                return quickSummary
+            }
+
+            // If quick summary failed, try web scraping
+            val doc: Document = Jsoup.connect(fullUrl)
+                .userAgent("Mozilla/5.0")
+                .timeout(10000)
+                .get()
+
+            val title = doc.title()
+            val description = doc.select("meta[name=description]").attr("content")
+            val mainContent = doc.select("article, main, .content, #content, .main")
+                .takeIf { it.isNotEmpty() }
+                ?.text()
+                ?: doc.body().text()
+
+            val contentToSummarize = """
+                Title: $title
+                Description: $description
+                Content: ${mainContent.take(5000)}
+            """.trimIndent()
+
+            val summaryPrompt = """
+                Summarize this webpage content in a natural, conversational way:
+                
+                $contentToSummarize
+                
+                Guidelines:
+                - Start with "Here's what I found on that website:"
+                - Provide a concise but informative summary
+                - Highlight key points and important information
+                - Keep it under 200 words
+                - Use markdown for formatting if needed
+                - Make it easy to read and understand
+            """.trimIndent()
+
+            responseChat.sendMessage(summaryPrompt).text 
+                ?: "Sorry, I couldn't summarize the website content."
+
+        } catch (e: Exception) {
+            // Try one last time with a general query about the domain
+            try {
+                val domain = url.replace(Regex("^(https?://|www\\.)"), "").split("/")[0]
+                val fallbackPrompt = "Tell me about $domain website and what it's known for, starting with 'Here's what I found:'"
+                responseChat.sendMessage(fallbackPrompt).text
+                    ?: "Sorry, I couldn't access or find information about that website."
+            } catch (e: Exception) {
+                "Sorry, I couldn't access or find information about that website."
+            }
+        }
     }
 }
 

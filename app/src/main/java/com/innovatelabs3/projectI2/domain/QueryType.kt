@@ -20,4 +20,5 @@ sealed class QueryType {
     object SendEmail : QueryType()
     object MakeCall : QueryType()
     object OpenLinkedInProfile : QueryType()
+    object ScrapDataFromWebUrl : QueryType()
 }
