@@ -264,7 +264,7 @@ object TextFormatter {
                 SpanStyle(
                     fontFamily = fontFamily,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 16.sp
                 )
             ) {
                 append(boldText)
