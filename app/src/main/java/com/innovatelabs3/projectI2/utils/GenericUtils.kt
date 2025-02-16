@@ -20,6 +20,9 @@ import android.content.Intent
 import android.net.Uri
 import android.content.pm.PackageManager.NameNotFoundException
 import android.content.ActivityNotFoundException
+import android.os.Environment
+import androidx.core.content.FileProvider
+import java.io.File
 
 class GenericUtils {
 
@@ -466,6 +469,18 @@ class GenericUtils {
             } catch (e: Exception) {
                 showToast(context, "Couldn't open LinkedIn profile")
             }
+        }
+
+        fun createImageUri(context: Context): Uri? {
+            val imageFile = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                "camera_photo_${System.currentTimeMillis()}.jpg"
+            )
+            return FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                imageFile
+            )
         }
     }
 } 
