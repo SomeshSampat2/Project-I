@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
 import com.innovatelabs3.projectI2.R
 import com.innovatelabs3.projectI2.utils.GenericUtils
 import androidx.compose.foundation.background
@@ -32,15 +31,37 @@ import androidx.compose.foundation.border
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.draw.shadow
+import android.provider.MediaStore
+import android.app.Application
+import android.widget.Toast
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.innovatelabs3.projectI2.ui.viewmodel.PhotoEditorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PhotoEditor() {
+fun PhotoEditorScreen(
+    viewModel: PhotoEditorViewModel
+) {
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showImageOptions by remember { mutableStateOf(selectedImageUri == null) }
     var textState by remember { mutableStateOf(TextFieldValue("")) }
     val context = LocalContext.current
     
+    val currentImage by viewModel.currentImage.collectAsState()
+    val isProcessing by viewModel.isProcessing.collectAsState()
+    val showToast by viewModel.showToast.collectAsState()
+    
+    // Handle toast messages
+    LaunchedEffect(showToast) {
+        showToast?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearToast()
+        }
+    }
+
     // Image picker launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -48,6 +69,9 @@ fun PhotoEditor() {
         uri?.let {
             selectedImageUri = it
             showImageOptions = false
+            // Convert Uri to Bitmap
+            val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+            viewModel.updateImage(bitmap)
         }
     }
     
@@ -56,7 +80,12 @@ fun PhotoEditor() {
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
-            showImageOptions = false
+            selectedImageUri?.let { uri ->
+                showImageOptions = false
+                // Convert Uri to Bitmap
+                val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                viewModel.updateImage(bitmap)
+            }
         }
     }
 
@@ -82,8 +111,10 @@ fun PhotoEditor() {
                         keyboardActions = KeyboardActions(
                             onSend = {
                                 if (textState.text.isNotBlank()) {
-                                    // TODO: Handle the editing command
-                                    textState = TextFieldValue("")
+                                    currentImage?.let { bitmap ->
+                                        viewModel.processEditCommand(textState.text, bitmap)
+                                        textState = TextFieldValue("")
+                                    }
                                 }
                             }
                         ),
@@ -92,21 +123,28 @@ fun PhotoEditor() {
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
-                        shape = RoundedCornerShape(24.dp)
+                        shape = RoundedCornerShape(24.dp),
+                        enabled = !isProcessing
                     )
 
                     IconButton(
                         onClick = {
                             if (textState.text.isNotBlank()) {
-                                // TODO: Handle the editing command
-                                textState = TextFieldValue("")
+                                currentImage?.let { bitmap ->
+                                    viewModel.processEditCommand(textState.text, bitmap)
+                                    textState = TextFieldValue("")
+                                }
                             }
-                        }
+                        },
+                        enabled = !isProcessing
                     ) {
                         Icon(
                             imageVector = Icons.Default.Send,
                             contentDescription = "Send",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = if (isProcessing) 
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            else 
+                                MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -117,9 +155,7 @@ fun PhotoEditor() {
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-                ),
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
             contentAlignment = Alignment.Center
         ) {
             if (showImageOptions) {
@@ -207,7 +243,7 @@ fun PhotoEditor() {
                             ),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Magenta,
+                            containerColor = Color.Black,
                             contentColor = Color.White
                         ),
                         elevation = ButtonDefaults.buttonElevation(
@@ -239,20 +275,44 @@ fun PhotoEditor() {
                     }
                 }
             } else {
-                // Selected Image Display
-                selectedImageUri?.let { uri ->
-                    Image(
-                        painter = rememberAsyncImagePainter(uri),
-                        contentDescription = "Selected Image",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Fit
-                    )
+                // Image Display and Processing UI
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    currentImage?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Selected Image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(400.dp)
+                                .padding(16.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                    
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .align(Alignment.Center)
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+// ViewModelFactory for PhotoEditorViewModel
+class ViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PhotoEditorViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return PhotoEditorViewModel(application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 } 
