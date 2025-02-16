@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -39,15 +38,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.innovatelabs3.projectI2.ui.navigation.BottomNavItem
+import com.innovatelabs3.projectI2.ui.viewmodel.PhotoEditorViewModel
 import com.innovatelabs3.projectI2.ui.viewmodel.UserViewModel
 import com.innovatelabs3.projectI2.utils.GenericUtils
 
 @Composable
-fun MainScreen(viewModel: UserViewModel) {
+fun MainScreen(
+    userViewModel: UserViewModel,
+    photoEditorViewModel: PhotoEditorViewModel
+) {
     val context = LocalContext.current
-    val showToast by viewModel.showToast.collectAsState()
-    val showSnackbar by viewModel.showSnackbar.collectAsState()
-    val showNotification by viewModel.showNotification.collectAsState()
+    val showToast by userViewModel.showToast.collectAsState()
+    val showSnackbar by userViewModel.showSnackbar.collectAsState()
+    val showNotification by userViewModel.showNotification.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -55,7 +58,8 @@ fun MainScreen(viewModel: UserViewModel) {
 
     // Permission request launcher
     val requestPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()) {}
+        ActivityResultContracts.RequestPermission()
+    ) {}
 
     // Request notification permission on Android 13+
     LaunchedEffect(key1 = lifecycleOwner.lifecycle, key2 = context) {
@@ -89,7 +93,7 @@ fun MainScreen(viewModel: UserViewModel) {
             LaunchedEffect(showToast) {
                 showToast?.let { message ->
                     GenericUtils.showToast(context, message)
-                    viewModel.clearToast()
+                    userViewModel.clearToast()
                 }
             }
 
@@ -97,7 +101,7 @@ fun MainScreen(viewModel: UserViewModel) {
             LaunchedEffect(showSnackbar) {
                 showSnackbar?.let { message ->
                     GenericUtils.showSnackbar(scope, snackbarHostState, message)
-                    viewModel.clearSnackbar()
+                    userViewModel.clearSnackbar()
                 }
             }
 
@@ -110,12 +114,16 @@ fun MainScreen(viewModel: UserViewModel) {
                 ) {
                     showNotification?.let { content ->
                         GenericUtils.showNotification(context, content)
-                        viewModel.clearNotification()
+                        userViewModel.clearNotification()
                     }
                 }
             }
 
-            NavigationGraph(navController = navController, viewModel = viewModel)
+            NavigationGraph(
+                navController = navController,
+                userViewModel = userViewModel,
+                photoEditorViewModel = photoEditorViewModel
+            )
         }
     }
 }
@@ -126,7 +134,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         BottomNavItem.Chat,
         BottomNavItem.PhotoEditor
     )
-    
+
     NavigationBar(
         modifier = Modifier.height(48.dp),
         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
@@ -137,7 +145,7 @@ fun BottomNavigationBar(navController: NavHostController) {
 
         items.forEach { item ->
             NavigationBarItem(
-                icon = { 
+                icon = {
                     Icon(
                         painter = painterResource(id = item.iconResId),
                         contentDescription = item.title,
@@ -170,17 +178,18 @@ fun BottomNavigationBar(navController: NavHostController) {
 @Composable
 fun NavigationGraph(
     navController: NavHostController,
-    viewModel: UserViewModel
+    userViewModel: UserViewModel,
+    photoEditorViewModel: PhotoEditorViewModel
 ) {
     NavHost(
         navController = navController,
         startDestination = BottomNavItem.Chat.route
     ) {
         composable(BottomNavItem.Chat.route) {
-            UserScreen(viewModel = viewModel)
+            UserScreen(viewModel = userViewModel)
         }
         composable(BottomNavItem.PhotoEditor.route) {
-            PhotoEditor()
+            PhotoEditorScreen(photoEditorViewModel)
         }
     }
 }

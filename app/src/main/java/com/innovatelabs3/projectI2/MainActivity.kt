@@ -17,19 +17,22 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.innovatelabs3.projectI2.ui.screen.MainScreen
 import com.innovatelabs3.projectI2.ui.theme.AppTheme
+import com.innovatelabs3.projectI2.ui.viewmodel.PhotoEditorViewModel
 import com.innovatelabs3.projectI2.ui.viewmodel.UserViewModel
 import com.innovatelabs3.projectI2.utils.GenericUtils
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: UserViewModel by viewModels()
+
+    private val userViewModel: UserViewModel by viewModels()
+    private val photoEditorViewModel : PhotoEditorViewModel by viewModels()
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val allGranted = permissions.entries.all { it.value }
         if (allGranted) {
-            viewModel.retryLastOperation()
+            userViewModel.retryLastOperation()
         } else {
             showPermissionRationaleDialog(
                 getRequiredPermissions()
@@ -40,7 +43,7 @@ class MainActivity : ComponentActivity() {
     private val callPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        viewModel.onPermissionResult("call", isGranted)
+        userViewModel.onPermissionResult("call", isGranted)
     }
 
     private val contactsPermissionLauncher =
@@ -83,7 +86,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(viewModel)
+                    MainScreen(userViewModel, photoEditorViewModel)
                 }
             }
         }
@@ -91,7 +94,7 @@ class MainActivity : ComponentActivity() {
         // Fixed lifecycle scope implementation
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.requestPermission.collect { permission ->
+                userViewModel.requestPermission.collect { permission ->
                     permission?.let {
                         when (permission) {
                             "storage" -> {
@@ -124,7 +127,7 @@ class MainActivity : ComponentActivity() {
                                 micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
                         }
-                        viewModel.clearPermissionRequest()
+                        userViewModel.clearPermissionRequest()
                     }
                 }
             }
