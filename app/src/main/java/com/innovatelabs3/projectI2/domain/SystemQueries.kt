@@ -19,6 +19,8 @@ import com.innovatelabs3.projectI2.domain.models.WhatsAppMessageContent
 import com.innovatelabs3.projectI2.domain.models.YouTubeSearchContent
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import android.graphics.Bitmap
+import com.google.ai.client.generativeai.type.content
 
 
 class SystemQueries {
@@ -566,6 +568,20 @@ class SystemQueries {
             } catch (e: Exception) {
                 "Sorry, I couldn't access or find information about that website."
             }
+        }
+    }
+
+    suspend fun analyzeImageWithQuery(image: Bitmap, query: String): String {
+        try {
+            val inputContent = content {
+                image(image)
+                text(query)
+            }
+
+            val response = responseModel.generateContent(inputContent)
+            return response.text ?: "Sorry, I couldn't analyze the image."
+        } catch (e: Exception) {
+            return "Error analyzing image: ${e.localizedMessage}"
         }
     }
 }
