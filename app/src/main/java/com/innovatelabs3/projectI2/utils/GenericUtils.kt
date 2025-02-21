@@ -23,6 +23,8 @@ import android.content.ActivityNotFoundException
 import android.os.Environment
 import androidx.core.content.FileProvider
 import java.io.File
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 
 class GenericUtils {
 
@@ -481,6 +483,17 @@ class GenericUtils {
                 "${context.packageName}.provider",
                 imageFile
             )
+        }
+
+        fun uriToBitmap(context: Context, uri: Uri): Bitmap? {
+            return try {
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
         }
     }
 } 

@@ -49,13 +49,19 @@ import androidx.compose.material3.Icon
 import android.speech.RecognizerIntent
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.res.painterResource
 import com.innovatelabs3.projectI2.R
 import android.speech.SpeechRecognizer
 import android.os.Bundle
 import android.speech.RecognitionListener
+import androidx.activity.compose.rememberLauncherForActivityResult
 import com.innovatelabs3.projectI2.utils.GenericUtils
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun UserScreen(viewModel: UserViewModel) {
@@ -139,6 +145,14 @@ fun UserScreen(viewModel: UserViewModel) {
         }
     }
 
+    val selectedImage by viewModel.selectedImage.collectAsState()
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        viewModel.setSelectedImage(uri)
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -178,33 +192,94 @@ fun UserScreen(viewModel: UserViewModel) {
                         )
                     }
 
-                    // Input TextField
-                    OutlinedTextField(
-                        value = inputText,
-                        onValueChange = { viewModel.updateInputText(it) },
+                    // New Image Picker Button
+                    IconButton(
+                        onClick = { imagePicker.launch("image/*") },
                         modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 40.dp, max = 120.dp),
-                        placeholder = {
-                            Text(
-                                text = if (isSearchMode) "Searchon web..." else placeholderText,
-                                color = TextSecondary.copy(alpha = 0.6f)
+                            .size(40.dp)
+                            .background(
+                                color = if (selectedImage != null) Primary.copy(alpha = 0.1f) else Color.Transparent,
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_image_placeholder),
+                            contentDescription = "Add Image",
+                            modifier = Modifier.size(22.dp),
+                            tint = if (selectedImage != null) Primary else TextSecondary
+                        )
+                    }
+
+                    // Input TextField with image preview
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = inputText,
+                            onValueChange = { viewModel.updateInputText(it) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 40.dp, max = 120.dp),
+                            placeholder = {
+                                Text(
+                                    text = when {
+                                        selectedImage != null -> "Ask.."
+                                        isSearchMode -> "Search on web..."
+                                        else -> placeholderText
+                                    },
+                                    color = TextSecondary.copy(alpha = 0.6f)
                                 )
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            cursorColor = Primary,
-                            focusedContainerColor = InputBg,
-                            unfocusedContainerColor = InputBg
-                        ),
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            fontFamily = OpenSansFont,
-                            color = Color.Black
-                        ),
-                        maxLines = 5,
-                    )
+                            },
+                            trailingIcon = {
+                                // Image Preview if selected
+                                selectedImage?.let { uri ->
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(2.dp)  // Small padding inside input box
+                                            .size(56.dp)    // Slightly smaller to fit nicely
+                                            .clip(RoundedCornerShape(6.dp))
+                                    ) {
+                                        Image(
+                                            painter = rememberAsyncImagePainter(
+                                                model = uri,
+                                                placeholder = painterResource(id = R.drawable.ic_image_placeholder)
+                                            ),
+                                            contentDescription = "Selected Image",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                        
+                                        // Close/Remove image button
+                                        IconButton(
+                                            onClick = { viewModel.setSelectedImage(null) },
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .align(Alignment.TopEnd)
+                                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.ic_close),
+                                                contentDescription = "Remove Image",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(10.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                cursorColor = Primary,
+                                focusedContainerColor = InputBg,
+                                unfocusedContainerColor = InputBg
+                            ),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily = OpenSansFont,
+                                color = Color.Black
+                            ),
+                            maxLines = 5,
+                        )
+                    }
 
                     // Send button with keyboard handling
                     IconButton(
@@ -431,6 +506,20 @@ fun ChatMessageItem(
                             }
                         )
                 ) {
+                    // Show image if present
+                    message.imageUri?.let { uri ->
+                        Image(
+                            painter = rememberAsyncImagePainter(uri),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
                     if (message.isUser) {
                         MessageContent(message)
                     } else {
