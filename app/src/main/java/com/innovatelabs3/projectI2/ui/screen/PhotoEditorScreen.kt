@@ -32,13 +32,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.draw.shadow
 import android.provider.MediaStore
-import android.app.Application
 import android.widget.Toast
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.innovatelabs3.projectI2.ui.viewmodel.PhotoEditorViewModel
+import androidx.compose.ui.text.style.TextAlign
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +50,8 @@ fun PhotoEditorScreen(
     val currentImage by viewModel.currentImage.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val showToast by viewModel.showToast.collectAsState()
+
+    val isImageEditingSupported = false
     
     // Handle toast messages
     LaunchedEffect(showToast) {
@@ -89,230 +88,237 @@ fun PhotoEditorScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            if (!showImageOptions) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextField(
-                        value = textState,
-                        onValueChange = { textState = it },
+    if (isImageEditingSupported) {
+
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            bottomBar = {
+                if (!showImageOptions) {
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp),
-                        placeholder = { Text("Type your editing command...") },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                        keyboardActions = KeyboardActions(
-                            onSend = {
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextField(
+                            value = textState,
+                            onValueChange = { textState = it },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            placeholder = { Text("Type your editing command...") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(
+                                onSend = {
+                                    if (textState.text.isNotBlank()) {
+                                        currentImage?.let { bitmap ->
+                                            viewModel.processEditCommand(textState.text, bitmap)
+                                            textState = TextFieldValue("")
+                                        }
+                                    }
+                                }
+                            ),
+                            colors = TextFieldDefaults.textFieldColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            shape = RoundedCornerShape(24.dp),
+                            enabled = !isProcessing
+                        )
+
+                        IconButton(
+                            onClick = {
                                 if (textState.text.isNotBlank()) {
                                     currentImage?.let { bitmap ->
                                         viewModel.processEditCommand(textState.text, bitmap)
                                         textState = TextFieldValue("")
                                     }
                                 }
-                            }
-                        ),
-                        colors = TextFieldDefaults.textFieldColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        shape = RoundedCornerShape(24.dp),
-                        enabled = !isProcessing
-                    )
-
-                    IconButton(
-                        onClick = {
-                            if (textState.text.isNotBlank()) {
-                                currentImage?.let { bitmap ->
-                                    viewModel.processEditCommand(textState.text, bitmap)
-                                    textState = TextFieldValue("")
-                                }
-                            }
-                        },
-                        enabled = !isProcessing
+                            },
+                            enabled = !isProcessing
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Send,
+                                contentDescription = "Send",
+                                tint = if (isProcessing)
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                else
+                                    MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (showImageOptions) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(
+                                MaterialTheme.colorScheme.surface
+                                    .copy(alpha = 0.9f)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(28.dp)
+                            )
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Send,
-                            contentDescription = "Send",
-                            tint = if (isProcessing) 
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            else 
-                                MaterialTheme.colorScheme.primary
+                        Text(
+                            "Select Image",
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Gallery Button
+                        OutlinedButton(
+                            onClick = { galleryLauncher.launch("image/*") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp)
+                                .shadow(
+                                    elevation = 0.dp,
+                                    shape = RoundedCornerShape(16.dp)
+                                ),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_gallery),
+                                    contentDescription = "Gallery",
+                                    modifier = Modifier.size(24.dp),
+                                    tint = Color.Black
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    "Choose from Gallery",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    color = Color.Black
+                                )
+                            }
+                        }
+
+                        // Camera Button
+                        Button(
+                            onClick = {
+                                GenericUtils.createImageUri(context)?.let { uri ->
+                                    selectedImageUri = uri
+                                    cameraLauncher.launch(uri)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp)
+                                .shadow(
+                                    elevation = 4.dp,
+                                    shape = RoundedCornerShape(16.dp),
+                                    spotColor = Color(0xFF9C27B0).copy(alpha = 0.2f)
+                                ),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Black,
+                                contentColor = Color.White
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 0.dp,
+                                pressedElevation = 2.dp,
+                                hoveredElevation = 4.dp
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_camera),
+                                    contentDescription = "Camera",
+                                    modifier = Modifier.size(24.dp),
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    "Take Photo",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White
+                                    )
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Image Display and Processing UI
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        currentImage?.let { bitmap ->
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Selected Image",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(400.dp)
+                                    .padding(16.dp)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+
+                        if (isProcessing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .align(Alignment.Center)
+                            )
+                        }
                     }
                 }
             }
         }
-    ) { paddingValues ->
+    } else {
         Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            if (showImageOptions) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(
-                            MaterialTheme.colorScheme.surface
-                                .copy(alpha = 0.9f)
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(28.dp)
-                        )
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        "Select Image",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Gallery Button
-                    OutlinedButton(
-                        onClick = { galleryLauncher.launch("image/*") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp)
-                            .shadow(
-                                elevation = 0.dp,
-                                shape = RoundedCornerShape(16.dp)
-                            ),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_gallery),
-                                contentDescription = "Gallery",
-                                modifier = Modifier.size(24.dp),
-                                tint = Color.Black
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                "Choose from Gallery",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = Color.Black
-                            )
-                        }
-                    }
-
-                    // Camera Button
-                    Button(
-                        onClick = {
-                            GenericUtils.createImageUri(context)?.let { uri ->
-                                selectedImageUri = uri
-                                cameraLauncher.launch(uri)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp)
-                            .shadow(
-                                elevation = 4.dp,
-                                shape = RoundedCornerShape(16.dp),
-                                spotColor = Color(0xFF9C27B0).copy(alpha = 0.2f)
-                            ),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Black,
-                            contentColor = Color.White
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 0.dp,
-                            pressedElevation = 2.dp,
-                            hoveredElevation = 4.dp
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_camera),
-                                contentDescription = "Camera",
-                                modifier = Modifier.size(24.dp),
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                "Take Photo",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color.White
-                                )
-                            )
-                        }
-                    }
-                }
-            } else {
-                // Image Display and Processing UI
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    currentImage?.let { bitmap ->
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Selected Image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(400.dp)
-                                .padding(16.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
-                    
-                    if (isProcessing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .align(Alignment.Center)
-                        )
-                    }
-                }
-            }
+            Text(
+                text = "Image Editing Coming Soon....",
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.Black,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
-
-// ViewModelFactory for PhotoEditorViewModel
-class ViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(PhotoEditorViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return PhotoEditorViewModel(application) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-} 
