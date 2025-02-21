@@ -68,6 +68,13 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
     // Loading message animation based on query type
     val loadingMessages = remember(queryType) {
         when (queryType) {
+            is QueryType.ImageAnalysis -> listOf(
+                "Analyzing your image",
+                "Processing visual elements",
+                "Interpreting details",
+                "Preparing response"
+            )
+
             is QueryType.ShowDirections,
             is QueryType.SearchYouTube,
             is QueryType.SearchSpotify,
@@ -151,7 +158,7 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    color = Color.Black.copy(alpha = 0.5f)
                 )
             }
 
@@ -165,7 +172,7 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
                 modifier = Modifier
                     .width(40.dp)
                     .padding(horizontal = 4.dp),
-                color = TextSecondary
+                color = Color.Black.copy(alpha = 0.5f)
             )
         }
 

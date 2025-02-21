@@ -129,6 +129,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
                 // If there's an image, use image analysis
                 if (selectedImage.value != null) {
+                    _lastQueryType.value = QueryType.ImageAnalysis
                     val bitmap = GenericUtils.uriToBitmap(getApplication(), selectedImage.value!!)
                     bitmap?.let {
                         val response = systemQueries.analyzeImageWithQuery(it, message)
