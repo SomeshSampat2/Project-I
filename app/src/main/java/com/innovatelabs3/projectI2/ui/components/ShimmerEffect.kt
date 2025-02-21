@@ -158,7 +158,7 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Black.copy(alpha = 0.5f)
+                    color = Color.Black.copy(alpha = 0.6f)
                 )
             }
 
@@ -172,7 +172,7 @@ fun ShimmerEffect(isWebSearch: Boolean = false, queryType: QueryType = QueryType
                 modifier = Modifier
                     .width(40.dp)
                     .padding(horizontal = 4.dp),
-                color = Color.Black.copy(alpha = 0.5f)
+                color = Color.Black.copy(alpha = 0.6f)
             )
         }
 
