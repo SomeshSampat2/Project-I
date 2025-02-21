@@ -21,4 +21,5 @@ sealed class QueryType {
     object MakeCall : QueryType()
     object OpenLinkedInProfile : QueryType()
     object ScrapDataFromWebUrl : QueryType()
+    object ImageAnalysis : QueryType()
 }
