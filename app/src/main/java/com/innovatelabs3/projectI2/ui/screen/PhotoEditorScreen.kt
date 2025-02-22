@@ -41,10 +41,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.LaunchedEffect
+import com.innovatelabs3.projectI2.ui.components.ProcessingOverlay
 import com.innovatelabs3.projectI2.utils.ImageEditorUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoEditorScreen(
@@ -297,25 +297,37 @@ fun PhotoEditorScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             currentImage?.let { bitmap ->
-                                Image(
-                                    bitmap = bitmap.asImageBitmap(),
-                                    contentDescription = "Selected Image",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(400.dp)
-                                        .padding(16.dp)
-                                        .clip(RoundedCornerShape(12.dp)),
-                                    contentScale = ContentScale.Fit
-                                )
+                                Box {  // Wrap Image in Box to properly position the overlay
+                                    Image(
+                                        bitmap = bitmap.asImageBitmap(),
+                                        contentDescription = "Selected Image",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(400.dp)
+                                            .padding(16.dp)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = ContentScale.Fit
+                                    )
 
-                                // Add rotation controls
+                                    // Show processing overlay when processing
+                                    if (isProcessing) {
+                                        ProcessingOverlay(
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .padding(16.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                        )
+                                    }
+                                }
+
+                                // Rotation controls
                                 ImageRotationControls(
                                     onRotate = { degrees ->
                                         viewModel.processEditCommand("rotate image by $degrees degrees", bitmap)
                                     }
                                 )
 
-                                // Add effects row
+                                // Effects row
                                 EffectsRow(
                                     currentImage = bitmap,
                                     onEffectSelected = { effectName ->
@@ -333,12 +345,6 @@ fun PhotoEditorScreen(
                                         }
                                         viewModel.processEditCommand(command, bitmap)
                                     }
-                                )
-                            }
-
-                            if (isProcessing) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(48.dp)
                                 )
                             }
                         }
