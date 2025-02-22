@@ -32,7 +32,6 @@ class PhotoEditorViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             try {
                 _isProcessing.value = true
-                _showToast.value = "Processing your request..."
 
                 val editResponse = SystemQueriesForImageEditor.analyzeEditCommand(command)
                 _editResponse.value = editResponse
@@ -62,8 +61,6 @@ class PhotoEditorViewModel(application: Application) : AndroidViewModel(applicat
                     }
                 }
 
-                _showToast.value = editResponse.description
-                
             } catch (e: Exception) {
                 _showToast.value = "Error processing edit command: ${e.message}"
             } finally {

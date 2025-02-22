@@ -1,5 +1,6 @@
 package com.innovatelabs3.projectI2.ui.screen
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +38,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import com.innovatelabs3.projectI2.ui.viewmodel.PhotoEditorViewModel
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.LaunchedEffect
+import com.innovatelabs3.projectI2.utils.ImageEditorUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -300,11 +307,31 @@ fun PhotoEditorScreen(
                                         .clip(RoundedCornerShape(12.dp)),
                                     contentScale = ContentScale.Fit
                                 )
-                                
+
                                 // Add rotation controls
                                 ImageRotationControls(
                                     onRotate = { degrees ->
                                         viewModel.processEditCommand("rotate image by $degrees degrees", bitmap)
+                                    }
+                                )
+
+                                // Add effects row
+                                EffectsRow(
+                                    currentImage = bitmap,
+                                    onEffectSelected = { effectName ->
+                                        val command = when(effectName) {
+                                            "Black & White" -> "convert to black and white"
+                                            "Sepia" -> "apply sepia effect"
+                                            "Blur" -> "apply blur effect"
+                                            "Sharpen" -> "sharpen image"
+                                            "Vignette" -> "add vignette effect"
+                                            "High Contrast" -> "increase contrast"
+                                            "Saturate" -> "increase saturation"
+                                            "Warm" -> "make image warmer"
+                                            "Cool" -> "make image cooler"
+                                            else -> return@EffectsRow
+                                        }
+                                        viewModel.processEditCommand(command, bitmap)
                                     }
                                 )
                             }
@@ -398,6 +425,86 @@ private fun ImageRotationControls(
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun EffectsRow(
+    currentImage: Bitmap,
+    onEffectSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val effects = listOf(
+        "Black & White" to { bitmap: Bitmap -> ImageEditorUtils.applyBlackAndWhite(bitmap) },
+        "Sepia" to { bitmap: Bitmap -> ImageEditorUtils.applySepia(bitmap) },
+        "Blur" to { bitmap: Bitmap -> ImageEditorUtils.applyBlur(context, bitmap, 5f) },
+        "Sharpen" to { bitmap: Bitmap -> ImageEditorUtils.applySharpen(bitmap, 50f) },
+        "Vignette" to { bitmap: Bitmap -> ImageEditorUtils.applyVignette(bitmap, 50f) },
+        "High Contrast" to { bitmap: Bitmap -> ImageEditorUtils.adjustContrast(bitmap, 50f) },
+        "Saturate" to { bitmap: Bitmap -> ImageEditorUtils.adjustSaturation(bitmap, 50f) },
+        "Warm" to { bitmap: Bitmap -> ImageEditorUtils.adjustTemperature(bitmap, 30f) },
+        "Cool" to { bitmap: Bitmap -> ImageEditorUtils.adjustTemperature(bitmap, -30f) }
+    )
+
+    LazyRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp)
+    ) {
+        items(effects.size) { index ->
+            val (effectName, effectFunction) = effects[index]
+            
+            var previewBitmap by remember(currentImage) {
+                mutableStateOf<Bitmap?>(null)
+            }
+
+            // Generate preview in a coroutine
+            LaunchedEffect(currentImage) {
+                withContext(Dispatchers.Default) {
+                    val scaledBitmap = Bitmap.createScaledBitmap(currentImage, 100, 100, true)
+                    previewBitmap = effectFunction(scaledBitmap)
+                }
+            }
+
+            Card(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clickable { onEffectSelected(effectName) },
+                shape = RoundedCornerShape(8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    previewBitmap?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = effectName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    
+                    // Effect name overlay
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .padding(4.dp)
+                    ) {
+                        Text(
+                            text = effectName,
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
         }
     }
 }
