@@ -13,6 +13,9 @@ import com.innovatelabs3.projectI2.utils.ImageEditorUtils
 import android.app.Application
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 
 class PhotoEditorViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -27,6 +30,14 @@ class PhotoEditorViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _showToast = MutableStateFlow<String?>(null)
     val showToast: StateFlow<String?> = _showToast
+
+    // Add history stack
+    private val _imageHistory = MutableStateFlow<List<Bitmap>>(emptyList())
+    val canUndo: StateFlow<Boolean> = _imageHistory.map { it.size > 1 }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(),
+        false
+    )
 
     fun processEditCommand(command: String, image: Bitmap) {
         viewModelScope.launch {
@@ -59,6 +70,11 @@ class PhotoEditorViewModel(application: Application) : AndroidViewModel(applicat
                     else -> {
                         _showToast.value = "This edit type is not supported yet"
                     }
+                }
+
+                // Add to history after successful edit
+                _currentImage.value?.let { newImage ->
+                    _imageHistory.value = _imageHistory.value + newImage
                 }
 
             } catch (e: Exception) {
@@ -145,5 +161,15 @@ class PhotoEditorViewModel(application: Application) : AndroidViewModel(applicat
 
     fun updateImage(bitmap: Bitmap) {
         _currentImage.value = bitmap
+        _imageHistory.value = listOf(bitmap)  // Reset history with new image
+    }
+
+    fun undoLastEdit() {
+        val history = _imageHistory.value
+        if (history.size > 1) {
+            // Remove current state and set to previous
+            _imageHistory.value = history.dropLast(1)
+            _currentImage.value = history[history.size - 2]
+        }
     }
 } 

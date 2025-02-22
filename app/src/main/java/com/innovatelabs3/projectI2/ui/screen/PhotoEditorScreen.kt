@@ -297,7 +297,7 @@ fun PhotoEditorScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             currentImage?.let { bitmap ->
-                                Box {  // Wrap Image in Box to properly position the overlay
+                                Box {  // Wrap Image in Box to properly position the overlay and revert button
                                     Image(
                                         bitmap = bitmap.asImageBitmap(),
                                         contentDescription = "Selected Image",
@@ -318,6 +318,16 @@ fun PhotoEditorScreen(
                                                 .clip(RoundedCornerShape(12.dp))
                                         )
                                     }
+
+                                    // Add revert button
+                                    val canUndo by viewModel.canUndo.collectAsState()
+                                    RevertButton(
+                                        onRevert = { viewModel.undoLastEdit() },
+                                        enabled = canUndo,
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(24.dp)
+                                    )
                                 }
 
                                 // Rotation controls
@@ -512,5 +522,37 @@ private fun EffectsRow(
                 }
             }
         }
+    }
+}
+
+// Create a new composable for the revert button
+@Composable
+private fun RevertButton(
+    onRevert: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onRevert,
+        enabled = enabled,
+        modifier = modifier
+            .size(48.dp)
+            .background(
+                color = if (enabled) 
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                else 
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                shape = CircleShape
+            )
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_undo),
+            contentDescription = "Revert last edit",
+            tint = if (enabled) 
+                MaterialTheme.colorScheme.primary 
+            else 
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
