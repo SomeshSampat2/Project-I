@@ -43,7 +43,11 @@ class PhotoEditorViewModel(application: Application) : AndroidViewModel(applicat
                     EditType.CONTRAST -> applyContrast(image, editResponse.parameters["value"] as Float)
                     EditType.SATURATION -> applySaturation(image, editResponse.parameters["value"] as Float)
                     EditType.BLUR -> applyBlur(image, editResponse.parameters["radius"] as Float)
-                    EditType.ROTATE -> applyRotation(image, editResponse.parameters["degrees"] as Float)
+                    EditType.ROTATE -> {
+                        val degrees = editResponse.parameters["degrees"] as Float
+                        val result = ImageEditorUtils.rotateImage(image, degrees)
+                        _currentImage.value = result
+                    }
                     EditType.SHARPEN -> applySharpen(image, editResponse.parameters["value"] as Float)
                     EditType.HUE -> applyHue(image, editResponse.parameters["value"] as Float)
                     EditType.SEPIA -> applySepia(image)
