@@ -36,6 +36,7 @@ import android.widget.Toast
 import androidx.compose.ui.graphics.asImageBitmap
 import com.innovatelabs3.projectI2.ui.viewmodel.PhotoEditorViewModel
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +52,7 @@ fun PhotoEditorScreen(
     val isProcessing by viewModel.isProcessing.collectAsState()
     val showToast by viewModel.showToast.collectAsState()
 
-    val isImageEditingSupported = false
+    val isImageEditingSupported = true
     
     // Handle toast messages
     LaunchedEffect(showToast) {
@@ -284,25 +285,35 @@ fun PhotoEditorScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        currentImage?.let { bitmap ->
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = "Selected Image",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(400.dp)
-                                    .padding(16.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            currentImage?.let { bitmap ->
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "Selected Image",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(400.dp)
+                                        .padding(16.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Fit
+                                )
+                                
+                                // Add rotation controls
+                                ImageRotationControls(
+                                    onRotate = { degrees ->
+                                        viewModel.processEditCommand("rotate image by $degrees degrees", bitmap)
+                                    }
+                                )
+                            }
 
-                        if (isProcessing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .align(Alignment.Center)
-                            )
+                            if (isProcessing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(48.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -318,6 +329,74 @@ fun PhotoEditorScreen(
                 style = MaterialTheme.typography.headlineSmall,
                 color = Color.Black,
                 textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun ImageRotationControls(
+    onRotate: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Rotate Left (-90 degrees)
+        IconButton(
+            onClick = { onRotate(-90f) },
+            modifier = Modifier
+                .size(48.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    shape = CircleShape
+                )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_rotate_left),
+                contentDescription = "Rotate Left",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        // Rotate 180 degrees
+        IconButton(
+            onClick = { onRotate(180f) },
+            modifier = Modifier
+                .size(48.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    shape = CircleShape
+                )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_rotate_180),
+                contentDescription = "Rotate 180°",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        // Rotate Right (90 degrees)
+        IconButton(
+            onClick = { onRotate(90f) },
+            modifier = Modifier
+                .size(48.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    shape = CircleShape
+                )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_rotate_right),
+                contentDescription = "Rotate Right",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
