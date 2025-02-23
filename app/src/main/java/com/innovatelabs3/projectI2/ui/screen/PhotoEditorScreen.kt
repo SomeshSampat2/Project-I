@@ -267,6 +267,9 @@ fun PhotoEditorScreen(
                                             Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
                                         }
                                     },
+                                    onChangeImage = {
+                                        showImageOptions = true
+                                    },
                                     canUndo = canUndo
                                 )
 
@@ -326,6 +329,7 @@ private fun ImageRotationControls(
     onRotate: (Float) -> Unit,
     onRevert: () -> Unit,
     onDownload: () -> Unit,
+    onChangeImage: () -> Unit,
     canUndo: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -336,6 +340,24 @@ private fun ImageRotationControls(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Change Image button - updated to match other rotation buttons
+        IconButton(
+            onClick = onChangeImage,
+            modifier = Modifier
+                .size(48.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    shape = CircleShape
+                )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_add_photo),
+                contentDescription = "Change Image",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
         // Revert button
         RevertButton(
             onRevert = onRevert,
@@ -576,26 +598,21 @@ private fun DownloadButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    IconButton(
+        onClick = onClick,
         modifier = modifier
-            .size(48.dp),
-        shape = CircleShape,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        IconButton(
-            onClick = onClick,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_download),
-                contentDescription = "Download image",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+            .size(48.dp)
+            .background(
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                shape = CircleShape
             )
-        }
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_download),
+            contentDescription = "Download image",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
 
