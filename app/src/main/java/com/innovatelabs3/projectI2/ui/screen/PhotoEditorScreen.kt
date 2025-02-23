@@ -303,7 +303,7 @@ fun PhotoEditorScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             currentImage?.let { bitmap ->
-                                Box {  // Wrap Image in Box to properly position the overlay and revert button
+                                Box {
                                     Image(
                                         bitmap = bitmap.asImageBitmap(),
                                         contentDescription = "Selected Image",
@@ -324,23 +324,23 @@ fun PhotoEditorScreen(
                                                 .clip(RoundedCornerShape(12.dp))
                                         )
                                     }
-
-                                    // Add revert button
-                                    val canUndo by viewModel.canUndo.collectAsState()
-                                    RevertButton(
-                                        onRevert = { viewModel.undoLastEdit() },
-                                        enabled = canUndo,
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .padding(24.dp)
-                                    )
                                 }
 
-                                // Rotation controls
+                                // Rotation controls with revert and download
+                                val canUndo by viewModel.canUndo.collectAsState()
                                 ImageRotationControls(
                                     onRotate = { degrees ->
                                         viewModel.processEditCommand("rotate image by $degrees degrees", bitmap)
-                                    }
+                                    },
+                                    onRevert = { viewModel.undoLastEdit() },
+                                    onDownload = {
+                                        if (ImageEditorUtils.saveImageToGallery(context, bitmap)) {
+                                            Toast.makeText(context, "Image saved to gallery", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    canUndo = canUndo
                                 )
 
                                 // Effects row
@@ -397,6 +397,9 @@ fun PhotoEditorScreen(
 @Composable
 private fun ImageRotationControls(
     onRotate: (Float) -> Unit,
+    onRevert: () -> Unit,
+    onDownload: () -> Unit,
+    canUndo: Boolean,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -406,6 +409,12 @@ private fun ImageRotationControls(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Revert button
+        RevertButton(
+            onRevert = onRevert,
+            enabled = canUndo
+        )
+
         // Rotate Left (-90 degrees)
         IconButton(
             onClick = { onRotate(-90f) },
@@ -459,6 +468,11 @@ private fun ImageRotationControls(
                 modifier = Modifier.size(24.dp)
             )
         }
+
+        // Download button
+        DownloadButton(
+            onClick = onDownload
+        )
     }
 }
 
@@ -597,27 +611,63 @@ private fun RevertButton(
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
-    IconButton(
-        onClick = onRevert,
-        enabled = enabled,
+    Card(
         modifier = modifier
-            .size(48.dp)
-            .background(
-                color = if (enabled) 
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                else 
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
-                shape = CircleShape
-            )
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_undo),
-            contentDescription = "Revert last edit",
-            tint = if (enabled) 
-                MaterialTheme.colorScheme.primary 
-            else 
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-            modifier = Modifier.size(24.dp)
+            .size(48.dp),
+        shape = CircleShape,
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (enabled) 4.dp else 0.dp
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (enabled)
+                MaterialTheme.colorScheme.surface
+            else
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         )
+    ) {
+        IconButton(
+            onClick = onRevert,
+            enabled = enabled,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_undo),
+                contentDescription = "Revert last edit",
+                tint = if (enabled)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+// Add this composable
+@Composable
+private fun DownloadButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .size(48.dp),
+        shape = CircleShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_download),
+                contentDescription = "Download image",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
