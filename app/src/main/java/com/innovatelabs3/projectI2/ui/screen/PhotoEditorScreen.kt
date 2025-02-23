@@ -357,6 +357,17 @@ fun PhotoEditorScreen(
                                             "Saturate" -> "increase saturation"
                                             "Warm" -> "make image warmer"
                                             "Cool" -> "make image cooler"
+                                            "Grayscale" -> "convert to grayscale"
+                                            "Invert" -> "invert colors"
+                                            "Vintage" -> "apply vintage effect"
+                                            "Pixelate" -> "pixelate image"
+                                            "Sketch" -> "convert to sketch"
+                                            "Cinematic" -> "apply cinematic effect"
+                                            "Vibrant" -> "make colors vibrant"
+                                            "Natural" -> "apply natural effect"
+                                            "Dramatic" -> "apply dramatic effect"
+                                            "Matte" -> "apply matte effect"
+                                            "Film" -> "apply film effect"
                                             else -> return@EffectsRow
                                         }
                                         viewModel.processEditCommand(command, bitmap)
@@ -494,6 +505,15 @@ private fun EffectsRow(
     }
 
     val effects = listOf(
+        // New cinematic and color effects first
+        "Cinematic" to { bitmap: Bitmap -> ImageEditorUtils.applyCinematic(bitmap) },
+        "Vibrant" to { bitmap: Bitmap -> ImageEditorUtils.applyVibrant(bitmap) },
+        "Natural" to { bitmap: Bitmap -> ImageEditorUtils.applyNatural(bitmap) },
+        "Dramatic" to { bitmap: Bitmap -> ImageEditorUtils.applyDramatic(bitmap) },
+        "Matte" to { bitmap: Bitmap -> ImageEditorUtils.applyMatte(bitmap) },
+        "Film" to { bitmap: Bitmap -> ImageEditorUtils.applyFilm(bitmap) },
+        
+        // Existing effects
         "Black & White" to { bitmap: Bitmap -> ImageEditorUtils.applyBlackAndWhite(bitmap) },
         "Sepia" to { bitmap: Bitmap -> ImageEditorUtils.applySepia(bitmap) },
         "Blur" to { bitmap: Bitmap -> ImageEditorUtils.applyBlur(context, bitmap, 5f) },
@@ -502,7 +522,12 @@ private fun EffectsRow(
         "High Contrast" to { bitmap: Bitmap -> ImageEditorUtils.adjustContrast(bitmap, 50f) },
         "Saturate" to { bitmap: Bitmap -> ImageEditorUtils.adjustSaturation(bitmap, 50f) },
         "Warm" to { bitmap: Bitmap -> ImageEditorUtils.adjustTemperature(bitmap, 30f) },
-        "Cool" to { bitmap: Bitmap -> ImageEditorUtils.adjustTemperature(bitmap, -30f) }
+        "Cool" to { bitmap: Bitmap -> ImageEditorUtils.adjustTemperature(bitmap, -30f) },
+        "Grayscale" to { bitmap: Bitmap -> ImageEditorUtils.applyGrayscale(bitmap) },
+        "Invert" to { bitmap: Bitmap -> ImageEditorUtils.invertColors(bitmap) },
+        "Vintage" to { bitmap: Bitmap -> ImageEditorUtils.applyVintage(bitmap) },
+        "Pixelate" to { bitmap: Bitmap -> ImageEditorUtils.applyPixelate(bitmap, 20f) },
+        "Sketch" to { bitmap: Bitmap -> ImageEditorUtils.applySketch(bitmap) }
     )
 
     LazyRow(

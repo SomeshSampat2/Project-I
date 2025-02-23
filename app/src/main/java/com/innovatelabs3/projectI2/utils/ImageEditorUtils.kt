@@ -266,6 +266,101 @@ object ImageEditorUtils {
         return applyBlur(context, source, radius)
     }
 
+    fun applyGrayscale(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        val paint = Paint()
+        val colorMatrix = ColorMatrix(floatArrayOf(
+            0.33f, 0.33f, 0.33f, 0f, 0f,
+            0.33f, 0.33f, 0.33f, 0f, 0f,
+            0.33f, 0.33f, 0.33f, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return result
+    }
+
+    fun invertColors(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        val paint = Paint()
+        val colorMatrix = ColorMatrix(floatArrayOf(
+            -1f, 0f, 0f, 0f, 255f,
+            0f, -1f, 0f, 0f, 255f,
+            0f, 0f, -1f, 0f, 255f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return result
+    }
+
+    fun applyVintage(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        val paint = Paint()
+        val colorMatrix = ColorMatrix(floatArrayOf(
+            0.9f, 0.5f, 0.1f, 0f, 0f,
+            0.3f, 0.8f, 0.1f, 0f, 0f,
+            0.2f, 0.3f, 0.5f, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return result
+    }
+
+    fun applyPixelate(source: Bitmap, pixelSize: Float): Bitmap {
+        val width = source.width
+        val height = source.height
+        val pixelWidth = (width / pixelSize).toInt()
+        val pixelHeight = (height / pixelSize).toInt()
+
+        // Scale down
+        val scaledBitmap = Bitmap.createScaledBitmap(source, pixelWidth, pixelHeight, false)
+        // Scale up
+        return Bitmap.createScaledBitmap(scaledBitmap, width, height, false)
+    }
+
+    fun applySketch(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        // First convert to grayscale
+        val grayscale = applyGrayscale(source)
+        
+        // Apply edge detection
+        val kernel = floatArrayOf(
+            -1f, -1f, -1f,
+            -1f, 8f, -1f,
+            -1f, -1f, -1f
+        )
+
+        val convolutionMatrix = ConvolutionMatrix(3)
+        convolutionMatrix.setAll(kernel)
+        convolutionMatrix.factor = 1f
+        convolutionMatrix.offset = 127f
+
+        val edgeDetected = applyConvolution(grayscale, convolutionMatrix)
+
+        // Invert colors for sketch effect
+        return invertColors(edgeDetected)
+    }
+
     private class ConvolutionMatrix(private val size: Int) {
         var matrix: FloatArray = FloatArray(size * size)
         var factor = 1.0f
@@ -322,6 +417,130 @@ object ImageEditorUtils {
         }
 
         result.setPixels(returnPixels, 0, width, 0, 0, width, height)
+        return result
+    }
+
+    fun applyCinematic(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        // Cinematic look with contrast, teal shadows and orange highlights
+        val paint = Paint()
+        val colorMatrix = ColorMatrix(floatArrayOf(
+            1.3f, -0.1f, 0.1f, 0f, -20f,  // Red channel
+            -0.1f, 1.3f, 0.1f, 0f, -10f,  // Green channel
+            0.1f, 0.1f, 1.1f, 0f, -30f,   // Blue channel
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return result
+    }
+
+    fun applyVibrant(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        // Enhance saturation and contrast for vibrant look
+        val paint = Paint()
+        val colorMatrix = ColorMatrix()
+        colorMatrix.setSaturation(1.5f) // Increase saturation
+        
+        val contrastMatrix = ColorMatrix(floatArrayOf(
+            1.2f, 0f, 0f, 0f, 10f,
+            0f, 1.2f, 0f, 0f, 10f,
+            0f, 0f, 1.2f, 0f, 10f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+        
+        colorMatrix.postConcat(contrastMatrix)
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return result
+    }
+
+    fun applyNatural(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        // Subtle enhancement while maintaining natural look
+        val paint = Paint()
+        val colorMatrix = ColorMatrix(floatArrayOf(
+            1.1f, 0f, 0f, 0f, 5f,
+            0f, 1.1f, 0f, 0f, 5f,
+            0f, 0f, 1.1f, 0f, 5f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return result
+    }
+
+    fun applyDramatic(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        // High contrast dramatic look
+        val paint = Paint()
+        val colorMatrix = ColorMatrix(floatArrayOf(
+            1.5f, 0f, 0f, 0f, -30f,
+            0f, 1.5f, 0f, 0f, -30f,
+            0f, 0f, 1.5f, 0f, -30f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return result
+    }
+
+    fun applyMatte(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        // Matte film look with reduced contrast
+        val paint = Paint()
+        val colorMatrix = ColorMatrix(floatArrayOf(
+            0.9f, 0f, 0f, 0f, 20f,
+            0f, 0.9f, 0f, 0f, 20f,
+            0f, 0f, 0.9f, 0f, 20f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return result
+    }
+
+    fun applyFilm(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        // Classic film look
+        val paint = Paint()
+        val colorMatrix = ColorMatrix(floatArrayOf(
+            1.3f, 0f, 0f, 0f, -10f,
+            0f, 1.1f, 0f, 0f, -10f,
+            0f, 0f, 1.0f, 0f, -10f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(source, 0f, 0f, paint)
         return result
     }
 } 
