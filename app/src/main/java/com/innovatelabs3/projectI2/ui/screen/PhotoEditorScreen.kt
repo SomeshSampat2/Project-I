@@ -50,6 +50,7 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.Brush
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -174,120 +175,46 @@ fun PhotoEditorScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (showImageOptions) {
-                    Column(
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.85f)
-                            .clip(RoundedCornerShape(28.dp))
-                            .background(
-                                MaterialTheme.colorScheme.surface
-                                    .copy(alpha = 0.9f)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(28.dp)
-                            )
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "Select Image",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Gallery Button
-                        OutlinedButton(
-                            onClick = { galleryLauncher.launch("image/*") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp)
-                                .shadow(
-                                    elevation = 0.dp,
-                                    shape = RoundedCornerShape(16.dp)
-                                ),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.primary
-                            ),
-                            border = BorderStroke(
-                                1.dp,
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                            )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(24.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_gallery),
-                                    contentDescription = "Gallery",
-                                    modifier = Modifier.size(24.dp),
-                                    tint = Color.Black
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    "Choose from Gallery",
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = Color.Black
-                                )
-                            }
-                        }
-
-                        // Camera Button
-                        Button(
-                            onClick = {
-                                GenericUtils.createImageUri(context)?.let { uri ->
-                                    selectedImageUri = uri
-                                    cameraLauncher.launch(uri)
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp)
-                                .shadow(
-                                    elevation = 4.dp,
-                                    shape = RoundedCornerShape(16.dp),
-                                    spotColor = Color(0xFF9C27B0).copy(alpha = 0.2f)
+                            Text(
+                                text = "Choose an Option",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 ),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Black,
-                                contentColor = Color.White
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 0.dp,
-                                pressedElevation = 2.dp,
-                                hoveredElevation = 4.dp
+                                textAlign = TextAlign.Center
                             )
-                        ) {
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
+                                horizontalArrangement = Arrangement.spacedBy(24.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_camera),
-                                    contentDescription = "Camera",
-                                    modifier = Modifier.size(24.dp),
-                                    tint = Color.White
+                                // Gallery button
+                                PhotoSelectionButton(
+                                    icon = R.drawable.ic_gallery,
+                                    text = "Choose from Gallery",
+                                    onClick = { galleryLauncher.launch("image/*") }
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    "Take Photo",
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.White
-                                    )
+
+                                // Camera button
+                                PhotoSelectionButton(
+                                    icon = R.drawable.ic_camera,
+                                    text = "Take Photo",
+                                    onClick = {
+                                        val uri = GenericUtils.createImageUri(context)
+                                        selectedImageUri = uri
+                                        cameraLauncher.launch(uri)
+                                    }
                                 )
                             }
                         }
@@ -667,6 +594,83 @@ private fun DownloadButton(
                 contentDescription = "Download image",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+// Add this composable for the photo selection buttons
+@Composable
+private fun PhotoSelectionButton(
+    icon: Int,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .width(160.dp)
+            .height(180.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when(text) {
+                "Choose from Gallery" -> Color(0xFFF3E5F5)  // Light purple
+                else -> Color(0xFFE3F2FD)  // Light blue
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = when(text) {
+                                "Choose from Gallery" -> listOf(
+                                    Color(0xFF9C27B0).copy(alpha = 0.2f),  // Purple
+                                    Color(0xFFE91E63).copy(alpha = 0.2f)   // Pink
+                                )
+                                else -> listOf(
+                                    Color(0xFF2196F3).copy(alpha = 0.2f),  // Blue
+                                    Color(0xFF03A9F4).copy(alpha = 0.2f)   // Light Blue
+                                )
+                            }
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = icon),
+                    contentDescription = text,
+                    tint = when(text) {
+                        "Choose from Gallery" -> Color(0xFF9C27B0)  // Purple
+                        else -> Color(0xFF2196F3)  // Blue
+                    },
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = when(text) {
+                    "Choose from Gallery" -> Color(0xFF6A1B9A)  // Dark Purple
+                    else -> Color(0xFF1565C0)  // Dark Blue
+                },
+                textAlign = TextAlign.Center
             )
         }
     }
