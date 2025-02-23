@@ -45,6 +45,12 @@ import com.innovatelabs3.projectI2.ui.components.ProcessingOverlay
 import com.innovatelabs3.projectI2.utils.ImageEditorUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
+import androidx.compose.ui.graphics.toArgb
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoEditorScreen(
@@ -452,6 +458,41 @@ private fun EffectsRow(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    
+    // Create a static sample image once
+    val sampleImage = remember {
+        // Create a simple gradient image for preview
+        val width = 100
+        val height = 100
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        
+        // Create a gradient background
+        val gradient = LinearGradient(
+            0f, 0f, width.toFloat(), height.toFloat(),
+            intArrayOf(
+                Color(0xFF2196F3).toArgb(), // Blue
+                Color(0xFF4CAF50).toArgb(), // Green
+                Color(0xFFFFC107).toArgb()  // Yellow
+            ),
+            null,
+            Shader.TileMode.CLAMP
+        )
+        
+        val paint = Paint().apply {
+            shader = gradient
+        }
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+        
+        // Add some shapes for better effect preview
+        paint.shader = null
+        paint.color = Color.White.copy(alpha = 0.5f).toArgb()
+        canvas.drawCircle(width * 0.3f, height * 0.3f, width * 0.2f, paint)
+        canvas.drawRect(width * 0.6f, height * 0.6f, width * 0.8f, height * 0.8f, paint)
+        
+        bitmap
+    }
+
     val effects = listOf(
         "Black & White" to { bitmap: Bitmap -> ImageEditorUtils.applyBlackAndWhite(bitmap) },
         "Sepia" to { bitmap: Bitmap -> ImageEditorUtils.applySepia(bitmap) },
@@ -474,15 +515,14 @@ private fun EffectsRow(
         items(effects.size) { index ->
             val (effectName, effectFunction) = effects[index]
             
-            var previewBitmap by remember(currentImage) {
+            var previewBitmap by remember {
                 mutableStateOf<Bitmap?>(null)
             }
 
-            // Generate preview in a coroutine
-            LaunchedEffect(currentImage) {
+            // Generate preview once using the sample image
+            LaunchedEffect(Unit) {
                 withContext(Dispatchers.Default) {
-                    val scaledBitmap = Bitmap.createScaledBitmap(currentImage, 100, 100, true)
-                    previewBitmap = effectFunction(scaledBitmap)
+                    previewBitmap = effectFunction(sampleImage)
                 }
             }
 
