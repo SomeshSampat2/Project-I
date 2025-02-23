@@ -2,15 +2,14 @@ package com.innovatelabs3.projectI2.util
 
 object WelcomePrompts {
     private val prompts = listOf(
-        "What's on your mind today?",
-        "Let's solve something together",
-        "What would you like to explore?",
-        "Ready to help you out...",
-        "Share your thoughts...",
-        "What can I help you with?",
-        "Curious about something?",
-        "Let's dive into your questions",
-        "What shall we discover today?"
+        "Hi there!",
+        "Ask me!",
+        "Hello :)",
+        "Need help?",
+        "Hey!",
+        "Hi friend!",
+        "Ask away!",
+        "Let's go!"
     )
 
     fun getRandomPrompt(): String {
