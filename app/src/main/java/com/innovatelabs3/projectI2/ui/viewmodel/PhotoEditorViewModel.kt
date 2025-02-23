@@ -64,6 +64,51 @@ class PhotoEditorViewModel(application: Application) : AndroidViewModel(applicat
                     EditType.VIGNETTE -> applyVignette(image, editResponse.parameters["value"] as Float)
                     EditType.TEMPERATURE -> applyTemperature(image, editResponse.parameters["value"] as Float)
                     EditType.NOISE_REDUCTION -> applyNoiseReduction(image, editResponse.parameters["value"] as Float)
+                    EditType.GRAYSCALE -> {
+                        val result = ImageEditorUtils.applyGrayscale(image)
+                        _currentImage.value = result
+                    }
+                    EditType.INVERT -> {
+                        val result = ImageEditorUtils.invertColors(image)
+                        _currentImage.value = result
+                    }
+                    EditType.VINTAGE -> {
+                        val result = ImageEditorUtils.applyVintage(image)
+                        _currentImage.value = result
+                    }
+                    EditType.PIXELATE -> {
+                        val value = editResponse.parameters["value"] as Float
+                        val result = ImageEditorUtils.applyPixelate(image, value)
+                        _currentImage.value = result
+                    }
+                    EditType.SKETCH -> {
+                        val result = ImageEditorUtils.applySketch(image)
+                        _currentImage.value = result
+                    }
+                    EditType.CINEMATIC -> {
+                        val result = ImageEditorUtils.applyCinematic(image)
+                        _currentImage.value = result
+                    }
+                    EditType.VIBRANT -> {
+                        val result = ImageEditorUtils.applyVibrant(image)
+                        _currentImage.value = result
+                    }
+                    EditType.NATURAL -> {
+                        val result = ImageEditorUtils.applyNatural(image)
+                        _currentImage.value = result
+                    }
+                    EditType.DRAMATIC -> {
+                        val result = ImageEditorUtils.applyDramatic(image)
+                        _currentImage.value = result
+                    }
+                    EditType.MATTE -> {
+                        val result = ImageEditorUtils.applyMatte(image)
+                        _currentImage.value = result
+                    }
+                    EditType.FILM -> {
+                        val result = ImageEditorUtils.applyFilm(image)
+                        _currentImage.value = result
+                    }
                     EditType.UNKNOWN -> {
                         _showToast.value = "Sorry, I couldn't understand that edit command"
                     }

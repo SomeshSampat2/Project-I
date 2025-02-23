@@ -39,6 +39,19 @@ sealed class SystemQueriesForImageEditor {
         TINT,
         HDR,
         NOISE_REDUCTION,
+        GRAYSCALE,
+        INVERT,
+        VINTAGE,
+        PIXELATE,
+        SKETCH,
+        CINEMATIC,
+        VIBRANT,
+        NATURAL,
+        DRAMATIC,
+        MATTE,
+        FILM,
+        WARM_VINTAGE,
+        COOL_TONE,
         UNKNOWN
     }
 
@@ -80,6 +93,19 @@ sealed class SystemQueriesForImageEditor {
                 TINT - for adding color tint
                 HDR - for HDR effect
                 NOISE_REDUCTION - for reducing image noise (value between 0 to 100)
+                GRAYSCALE - for converting image to grayscale
+                INVERT - for inverting image colors
+                VINTAGE - for applying vintage effect
+                PIXELATE - for pixelating image (value between 1 to 100)
+                SKETCH - for converting image to sketch
+                CINEMATIC - for adding cinematic effect
+                VIBRANT - for adding vibrant effect
+                NATURAL - for adding natural effect
+                DRAMATIC - for adding dramatic effect
+                MATTE - for adding matte effect
+                FILM - for adding film effect
+                WARM_VINTAGE - for adding warm vintage effect
+                COOL_TONE - for adding cool tone effect
                 
                 Examples:
                 "Make the image black and white" -> BLACK_AND_WHITE
@@ -164,6 +190,59 @@ sealed class SystemQueriesForImageEditor {
                     editType = EditType.NOISE_REDUCTION,
                     parameters = mapOf("value" to (value ?: 50f)),
                     description = "Reducing image noise by ${value ?: 50}"
+                )
+                "GRAYSCALE" -> ImageEditResponse(
+                    editType = EditType.GRAYSCALE,
+                    description = "Converting to grayscale"
+                )
+                "INVERT" -> ImageEditResponse(
+                    editType = EditType.INVERT,
+                    description = "Inverting colors"
+                )
+                "VINTAGE" -> ImageEditResponse(
+                    editType = EditType.VINTAGE,
+                    description = "Applying vintage effect"
+                )
+                "PIXELATE" -> ImageEditResponse(
+                    editType = EditType.PIXELATE,
+                    parameters = mapOf("value" to (value ?: 10f)),
+                    description = "Pixelating image"
+                )
+                "SKETCH" -> ImageEditResponse(
+                    editType = EditType.SKETCH,
+                    description = "Converting to sketch"
+                )
+                "CINEMATIC" -> ImageEditResponse(
+                    editType = EditType.CINEMATIC,
+                    description = "Adding cinematic effect"
+                )
+                "VIBRANT" -> ImageEditResponse(
+                    editType = EditType.VIBRANT,
+                    description = "Adding vibrant effect"
+                )
+                "NATURAL" -> ImageEditResponse(
+                    editType = EditType.NATURAL,
+                    description = "Adding natural effect"
+                )
+                "DRAMATIC" -> ImageEditResponse(
+                    editType = EditType.DRAMATIC,
+                    description = "Adding dramatic effect"
+                )
+                "MATTE" -> ImageEditResponse(
+                    editType = EditType.MATTE,
+                    description = "Adding matte effect"
+                )
+                "FILM" -> ImageEditResponse(
+                    editType = EditType.FILM,
+                    description = "Adding film effect"
+                )
+                "WARM_VINTAGE" -> ImageEditResponse(
+                    editType = EditType.WARM_VINTAGE,
+                    description = "Adding warm vintage effect"
+                )
+                "COOL_TONE" -> ImageEditResponse(
+                    editType = EditType.COOL_TONE,
+                    description = "Adding cool tone effect"
                 )
                 else -> ImageEditResponse(EditType.UNKNOWN)
             }
