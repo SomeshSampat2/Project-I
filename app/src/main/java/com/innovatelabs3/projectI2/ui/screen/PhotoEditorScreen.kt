@@ -134,10 +134,12 @@ fun PhotoEditorScreen(
                                     }
                                 }
                             ),
-                            colors = TextFieldDefaults.textFieldColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                disabledContainerColor = MaterialTheme.colorScheme.surface,
                                 focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
+                                unfocusedIndicatorColor = Color.Transparent,
                             ),
                             shape = RoundedCornerShape(24.dp),
                             enabled = !isProcessing
@@ -275,7 +277,6 @@ fun PhotoEditorScreen(
 
                                 // Effects row
                                 EffectsRow(
-                                    currentImage = bitmap,
                                     onEffectSelected = { effectName ->
                                         val command = when(effectName) {
                                             "Black & White" -> "convert to black and white"
@@ -427,7 +428,6 @@ private fun ImageRotationControls(
 
 @Composable
 private fun EffectsRow(
-    currentImage: Bitmap,
     onEffectSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {

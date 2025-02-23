@@ -171,10 +171,9 @@ fun UserScreen(viewModel: UserViewModel) {
             ) {
                 Row(
                     modifier = Modifier
-                        .padding(12.dp)
+                        .padding(start = 8.dp,top = 12.dp, bottom = 12.dp, end = 16.dp)
                         .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Web search toggle button
                     IconButton(
@@ -187,7 +186,7 @@ fun UserScreen(viewModel: UserViewModel) {
                             )
                     ) {
                         GlobeIcon(
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(24.dp),
                             color = if (isSearchMode) Primary else TextSecondary
                         )
                     }
@@ -205,7 +204,7 @@ fun UserScreen(viewModel: UserViewModel) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_image_placeholder),
                             contentDescription = "Add Image",
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(24.dp),
                             tint = if (selectedImage != null) Primary else TextSecondary
                         )
                     }
@@ -292,6 +291,7 @@ fun UserScreen(viewModel: UserViewModel) {
                         },
                         modifier = Modifier
                             .size(40.dp)
+                            .padding(start = 16.dp)
                             .background(
                                 color = if (inputText.isNotEmpty()) Primary else Primary.copy(alpha = 0.1f),
                                 shape = CircleShape
