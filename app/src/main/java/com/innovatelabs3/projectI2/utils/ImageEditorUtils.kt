@@ -3,10 +3,10 @@ package com.innovatelabs3.projectI2.utils
 import android.content.Context
 import android.graphics.*
 import android.renderscript.*
-import androidx.core.graphics.ColorUtils
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 
 object ImageEditorUtils {
 
@@ -542,5 +542,38 @@ object ImageEditorUtils {
         paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
         canvas.drawBitmap(source, 0f, 0f, paint)
         return result
+    }
+
+    fun saveImageToGallery(context: Context, bitmap: Bitmap): Boolean {
+        return try {
+            val filename = "edited_image_${System.currentTimeMillis()}.jpg"
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+            }
+
+            val resolver = context.contentResolver
+            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+            uri?.let {
+                resolver.openOutputStream(it)?.use { stream ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    contentValues.clear()
+                    contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    resolver.update(it, contentValues, null, null)
+                }
+                true
+            } ?: false
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 } 
