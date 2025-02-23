@@ -89,23 +89,53 @@ object ImageEditorUtils {
     }
 
     fun applyBlur(context: Context, source: Bitmap, radius: Float): Bitmap {
-        val width = source.width
-        val height = source.height
-        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        
-        val script = RenderScript.create(context)
-        val input = Allocation.createFromBitmap(script, source)
-        val output = Allocation.createFromBitmap(script, result)
-        
-        ScriptIntrinsicBlur.create(script, Element.U8_4(script)).apply {
-            setRadius(radius)
-            setInput(input)
-            forEach(output)
+        try {
+            // Create output bitmap
+            val output = Bitmap.createBitmap(
+                source.width, source.height,
+                Bitmap.Config.ARGB_8888
+            )
+
+            // Create a RenderScript context
+            val rs = RenderScript.create(context)
+
+            // Create an Allocation for input
+            val input = Allocation.createFromBitmap(
+                rs, source,
+                Allocation.MipmapControl.MIPMAP_NONE,
+                Allocation.USAGE_SCRIPT
+            )
+
+            // Create an Allocation for output
+            val output_allocation = Allocation.createFromBitmap(rs, output)
+
+            // Create a ScriptIntrinsicBlur object
+            val script = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs))
+
+            // Set blur radius (0 < radius <= 25)
+            script.setRadius(radius.coerceIn(0f, 25f))
+
+            // Set input
+            script.setInput(input)
+
+            // Process and set output
+            script.forEach(output_allocation)
+
+            // Copy the output to the output bitmap
+            output_allocation.copyTo(output)
+
+            // Clean up resources
+            input.destroy()
+            output_allocation.destroy()
+            script.destroy()
+            rs.destroy()
+
+            return output
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Return original bitmap if blur fails
+            return source
         }
-        
-        output.copyTo(result)
-        script.destroy()
-        return result
     }
 
     fun rotateImage(source: Bitmap, degrees: Float): Bitmap {
