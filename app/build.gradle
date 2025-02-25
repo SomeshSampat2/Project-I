@@ -19,8 +19,8 @@ android {
         applicationId "com.innovatelabs3.projectI2"
         minSdk 24
         targetSdk 34
-        versionCode 230
-        versionName "2.30"
+        versionCode 301
+        versionName "3.01"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
