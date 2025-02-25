@@ -71,62 +71,77 @@ sealed class SystemQueriesForImageEditor {
 
         suspend fun analyzeEditCommand(command: String): ImageEditResponse {
             val analysisPrompt = """
-                Analyze this image editing command and respond with the edit type and parameters.
-                Respond with only the edit type and any numerical parameters if present.
-                
-                Available edit types:
-                BLACK_AND_WHITE - for grayscale or black and white conversion
-                BRIGHTNESS - for adjusting image brightness (value between -100 to 100)
-                CONTRAST - for adjusting image contrast (value between -100 to 100)
-                SATURATION - for adjusting color saturation (value between -100 to 100)
-                BLUR - for adding blur effect (radius between 1 to 25)
-                ROTATE - for rotating image (degrees: 90, 180, 270)
-                FLIP - for flipping image (horizontal or vertical)
-                CROP - for cropping image
-                RESIZE - for resizing image
-                FILTER - for applying preset filters
-                SHARPEN - for sharpening image (value between 0 to 100)
-                HUE - for adjusting color hue (value between -180 to 180)
-                SEPIA - for applying sepia tone
-                VIGNETTE - for adding vignette effect (value between 0 to 100)
-                TEMPERATURE - for adjusting color temperature (value between -100 to 100)
-                TINT - for adding color tint
-                HDR - for HDR effect
-                NOISE_REDUCTION - for reducing image noise (value between 0 to 100)
-                GRAYSCALE - for converting image to grayscale
-                INVERT - for inverting image colors
-                VINTAGE - for applying vintage effect
-                PIXELATE - for pixelating image (value between 1 to 100)
-                SKETCH - for converting image to sketch
-                CINEMATIC - for adding cinematic effect
-                VIBRANT - for adding vibrant effect
-                NATURAL - for adding natural effect
-                DRAMATIC - for adding dramatic effect
-                MATTE - for adding matte effect
-                FILM - for adding film effect
-                WARM_VINTAGE - for adding warm vintage effect
-                COOL_TONE - for adding cool tone effect
-                
-                Examples:
-                "Make the image black and white" -> BLACK_AND_WHITE
-                "Increase brightness by 50" -> BRIGHTNESS:50
-                "Decrease contrast by 30" -> CONTRAST:-30
-                "Add blur effect" -> BLUR:5
-                "Rotate image by 90 degrees" -> ROTATE:90
-                "Make it more saturated" -> SATURATION:30
-                "Apply sepia effect" -> SEPIA
-                "Reduce noise in the image" -> NOISE_REDUCTION:50
-                "Make the image warmer" -> TEMPERATURE:30
-                "Add vignette effect" -> VIGNETTE:50
-                
-                Command: "$command"
-            """.trimIndent()
+        Analyze this image editing command and respond with the edit type and parameters.
+        Understand natural language requests and map them to the appropriate edit type.
+        Respond with only the edit type and any numerical parameters if present.
+        
+        Available edit types:
+        BLACK_AND_WHITE - for grayscale, black and white conversion, monochrome, no color
+        BRIGHTNESS - for adjusting image brightness, making brighter/darker (value between -100 to 100)
+        CONTRAST - for adjusting image contrast, more/less contrast (value between -100 to 100)
+        SATURATION - for adjusting color saturation, more/less colorful (value between -100 to 100)
+        BLUR - for adding blur effect, making blurry, soft focus (radius between 1 to 25)
+        ROTATE - for rotating image (degrees: 90, 180, 270, or any specified angle)
+        SHARPEN - for sharpening image, making clearer, more defined (value between 0 to 100)
+        SEPIA - for applying sepia tone, vintage brown effect, old photo look
+        VIGNETTE - for adding vignette effect, dark edges (value between 0 to 100)
+        TEMPERATURE - for adjusting color temperature, warmer/cooler (value between -100 to 100)
+        GRAYSCALE - for converting image to grayscale, removing color
+        INVERT - for inverting image colors, negative effect
+        VINTAGE - for applying vintage effect, retro look
+        PIXELATE - for pixelating image, mosaic effect (value between 1 to 100)
+        SKETCH - for converting image to sketch, drawing effect
+        CINEMATIC - for adding cinematic effect, movie-like, film look
+        VIBRANT - for adding vibrant effect, more vivid colors
+        NATURAL - for adding natural effect, balanced colors
+        DRAMATIC - for adding dramatic effect, high contrast
+        MATTE - for adding matte effect, flat look
+        FILM - for adding film effect, analog camera look
+        REMOVE_BACKGROUND - for removing background, isolating subject
+        
+        Examples of natural language mapping:
+        "Make the image black and white" -> BLACK_AND_WHITE
+        "Convert to monochrome" -> BLACK_AND_WHITE
+        "Increase brightness by 50" -> BRIGHTNESS:50
+        "Make it brighter" -> BRIGHTNESS:30
+        "Make it a bit darker" -> BRIGHTNESS:-20
+        "Decrease contrast by 30" -> CONTRAST:-30
+        "Add more contrast" -> CONTRAST:40
+        "Add blur effect" -> BLUR:5
+        "Make it blurry" -> BLUR:8
+        "Rotate image by 90 degrees" -> ROTATE:90
+        "Turn it upside down" -> ROTATE:180
+        "Flip it" -> ROTATE:180
+        "Make it more saturated" -> SATURATION:30
+        "Add more color" -> SATURATION:40
+        "Make colors pop" -> SATURATION:50
+        "Apply sepia effect" -> SEPIA
+        "Make it look old" -> SEPIA
+        "Reduce noise in the image" -> NOISE_REDUCTION:50
+        "Make the image warmer" -> TEMPERATURE:30
+        "Add cooler tones" -> TEMPERATURE:-30
+        "Add vignette effect" -> VIGNETTE:50
+        "Darken the edges" -> VIGNETTE:60
+        "Make it sharper" -> SHARPEN:40
+        "Increase definition" -> SHARPEN:50
+        "Make it look like a sketch" -> SKETCH
+        "Convert to drawing" -> SKETCH
+        "Make it look cinematic" -> CINEMATIC
+        "Add film look" -> FILM
+        "Make it more dramatic" -> DRAMATIC
+        "Add vibrant colors" -> VIBRANT
+        "Make colors more natural" -> NATURAL
+        "Add matte effect" -> MATTE
+        "Remove the background" -> REMOVE_BACKGROUND
+        "Isolate the subject" -> REMOVE_BACKGROUND
+        
+        Command: "$command"
+    """.trimIndent()
 
             val response = analyzerChat.sendMessage(analysisPrompt).text?.trim() ?: return ImageEditResponse(EditType.UNKNOWN)
-            
+
             return parseResponse(response)
         }
-
         private fun parseResponse(response: String): ImageEditResponse {
             val parts = response.split(":")
             val editType = parts[0].trim()
