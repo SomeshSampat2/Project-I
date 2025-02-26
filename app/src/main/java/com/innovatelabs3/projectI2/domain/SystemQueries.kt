@@ -38,7 +38,7 @@ class SystemQueries {
 
     // For detailed responses and complex content
     private val responseModel = GenerativeModel(
-        modelName = "gemini-1.5-flash",
+        modelName = "gemini-2.0-flash-lite",
         apiKey = BuildConfig.GEMINI_API_KEY,
         safetySettings = listOf(
             SafetySetting(harmCategory = HarmCategory.HARASSMENT, threshold = BlockThreshold.NONE),
