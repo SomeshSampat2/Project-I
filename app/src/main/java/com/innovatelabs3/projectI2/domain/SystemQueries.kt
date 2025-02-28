@@ -38,7 +38,7 @@ class SystemQueries {
 
     // For detailed responses and complex content
     private val responseModel = GenerativeModel(
-        modelName = "gemini-2.0-flash-lite",
+        modelName = "gemini-2.0-flash",
         apiKey = BuildConfig.GEMINI_API_KEY,
         safetySettings = listOf(
             SafetySetting(harmCategory = HarmCategory.HARASSMENT, threshold = BlockThreshold.NONE),
@@ -283,17 +283,48 @@ class SystemQueries {
     }
 
     suspend fun handleGeneralQuery(query: String): String {
-        return when (analyzeQueryType(query)) {
-            is QueryType.ScrapDataFromWebUrl -> {
-                val url = extractUrl(query)
-                if (url.isNotEmpty()) {
-                    scrapeWebsite(url)
-                } else {
-                    "I couldn't find a valid URL in your message. Please provide a website URL to summarize."
+        return try {
+            when (analyzeQueryType(query)) {
+                is QueryType.ScrapDataFromWebUrl -> {
+                    val url = extractUrl(query)
+                    if (url.isNotEmpty()) {
+                        scrapeWebsite(url)
+                    } else {
+                        "I couldn't find a valid URL in your message. Please provide a website URL to summarize."
+                    }
+                }
+                else -> {
+                    try {
+                        // First try with responseChat
+                        val response = responseChat.sendMessage(query).text
+                        if (response != null) {
+                            return response
+                        }
+                        
+                        // If that fails, fall back to analyzerModel
+                        val fallbackResponse = analyzerModel.generateContent(query).text
+                        fallbackResponse ?: "Sorry, I couldn't process your request."
+                    } catch (e: Exception) {
+                        // Log the error for debugging
+                        e.printStackTrace()
+                        
+                        // Try one more time with a simpler model configuration
+                        try {
+                            val simpleResponse = GenerativeModel(
+                                modelName = "gemini-1.5-flash",
+                                apiKey = BuildConfig.GEMINI_API_KEY
+                            ).generateContent(query).text
+                            
+                            simpleResponse ?: "I'm having trouble processing that request right now."
+                        } catch (e2: Exception) {
+                            "I'm sorry, I'm having trouble understanding that right now. Could you try rephrasing your question?"
+                        }
+                    }
                 }
             }
-            else -> responseChat.sendMessage(query).text 
-                ?: "Sorry, I couldn't process your request."
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "I apologize, but I encountered an issue processing your request. Could you try again with different wording?"
         }
     }
 
