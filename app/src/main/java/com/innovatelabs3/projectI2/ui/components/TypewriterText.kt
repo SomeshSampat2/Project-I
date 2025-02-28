@@ -21,69 +21,74 @@ fun TypewriterText(
     wordsPerFrame: Int = 3,  // Added parameter for words per frame
     onAnimationComplete: () -> Unit = {}
 ) {
+    // Skip all animation logic and just display text directly if shouldAnimate is false
+    if (!shouldAnimate) {
+        Text(
+            text = text,
+            modifier = modifier,
+            style = style,
+            softWrap = true
+        )
+        return
+    }
+    
     var currentText by remember { mutableStateOf(AnnotatedString("")) }
     var currentIndex by remember { mutableStateOf(0) }
     
-    LaunchedEffect(text, shouldAnimate) {
-        if (shouldAnimate) {
-            currentText = AnnotatedString("")
-            currentIndex = 0
+    LaunchedEffect(text) {
+        currentText = AnnotatedString("")
+        currentIndex = 0
+        
+        while (currentIndex < text.length) {
+            delay(15) // Typing speed
             
-            while (currentIndex < text.length) {
-                delay(15) // Typing speed
-                
-                // Calculate next position based on words per frame
-                var nextPosition = currentIndex
-                repeat(wordsPerFrame) {
-                    val next = text.indexOf(' ', nextPosition + 1)
-                    if (next == -1 || next - currentIndex > 8) {  // Increased max chars per frame
-                        nextPosition += minOf(8, text.length - nextPosition)
-                        return@repeat
-                    }
-                    nextPosition = next
+            // Calculate next position based on words per frame
+            var nextPosition = currentIndex
+            repeat(wordsPerFrame) {
+                val next = text.indexOf(' ', nextPosition + 1)
+                if (next == -1 || next - currentIndex > 8) {  // Increased max chars per frame
+                    nextPosition += minOf(8, text.length - nextPosition)
+                    return@repeat
                 }
-                
-                // Ensure we move at least one character forward
-                if (nextPosition <= currentIndex) {
-                    nextPosition = minOf(currentIndex + 1, text.length)
-                }
-                
-                val builder = AnnotatedString.Builder()
-                builder.append(text.subSequence(0, nextPosition))
-                
-                // Copy all span styles from original text up to current position
-                text.spanStyles.forEach { span ->
-                    if (span.start <= nextPosition) {
-                        val end = minOf(span.end, nextPosition)
-                        builder.addStyle(
-                            span.item,
-                            span.start,
-                            end
-                        )
-                    }
-                }
-                
-                // Copy all paragraph styles
-                text.paragraphStyles.forEach { para ->
-                    if (para.start <= nextPosition) {
-                        val end = minOf(para.end, nextPosition)
-                        builder.addStyle(
-                            para.item,
-                            para.start,
-                            end
-                        )
-                    }
-                }
-                
-                currentText = builder.toAnnotatedString()
-                currentIndex = nextPosition
+                nextPosition = next
             }
-            onAnimationComplete()
-        } else {
-            currentText = text
-            currentIndex = text.length
-            onAnimationComplete()
+            
+            // Ensure we move at least one character forward
+            if (nextPosition <= currentIndex) {
+                nextPosition = minOf(currentIndex + 1, text.length)
+            }
+            
+            val builder = AnnotatedString.Builder()
+            builder.append(text.subSequence(0, nextPosition))
+            
+            // Copy all span styles from original text up to current position
+            text.spanStyles.forEach { span ->
+                if (span.start <= nextPosition) {
+                    val end = minOf(span.end, nextPosition)
+                    builder.addStyle(
+                        span.item,
+                        span.start,
+                        end
+                    )
+                }
+            }
+            
+            // Copy all paragraph styles
+            text.paragraphStyles.forEach { para ->
+                if (para.start <= nextPosition) {
+                    val end = minOf(para.end, nextPosition)
+                    builder.addStyle(
+                        para.item,
+                        para.start,
+                        end
+                    )
+                }
+            }
+            
+            currentText = builder.toAnnotatedString()
+            currentIndex = nextPosition
         }
+        onAnimationComplete()
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
