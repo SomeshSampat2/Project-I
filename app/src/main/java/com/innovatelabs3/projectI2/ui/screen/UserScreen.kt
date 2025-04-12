@@ -332,23 +332,30 @@ fun UserScreen(viewModel: UserViewModel) {
                 ) {
                     items(chatMessages.size) { index ->
                         val message = chatMessages[index]
-                        Column {
-                            ChatMessageItem(message, viewModel)
-                            
-                            // Show search results after assistant's message
-                            if (!message.isUser && 
-                                lastQueryType == QueryType.SearchFiles && 
-                                searchResults.isNotEmpty() && 
-                                index == chatMessages.lastIndex) {
-                                FileSearchResults(results = searchResults)
-                            }
-                            
-                            // Show web search results if in search mode
-                            if (!message.isUser && 
-                                isSearchMode && 
-                                searchSources.isNotEmpty() && 
-                                index == chatMessages.lastIndex) {
-                                SearchSourcesRow(sources = searchSources)
+                        val isLastMessage = index == chatMessages.lastIndex
+
+                        // Hide the last assistant message placeholder while loading the first chunk
+                        val shouldShowMessage = !(isLastMessage && !message.isUser && isLoading)
+
+                        if (shouldShowMessage) {
+                            Column {
+                                ChatMessageItem(message, viewModel)
+                                
+                                // Show search results after assistant's message
+                                if (!message.isUser && 
+                                    lastQueryType == QueryType.SearchFiles && 
+                                    searchResults.isNotEmpty() && 
+                                    isLastMessage) {
+                                    FileSearchResults(results = searchResults)
+                                }
+                                
+                                // Show web search results if in search mode
+                                if (!message.isUser && 
+                                    isSearchMode && 
+                                    searchSources.isNotEmpty() && 
+                                    isLastMessage) {
+                                    SearchSourcesRow(sources = searchSources)
+                                }
                             }
                         }
                     }
@@ -488,9 +495,6 @@ fun ChatMessageItem(
                         )
                         clip = true
                     }
-                    .animateContentSize(),
-                shadowElevation = 6.dp,
-                tonalElevation = 2.dp
             ) {
                 Column(
                     modifier = Modifier
@@ -524,33 +528,27 @@ fun ChatMessageItem(
                         MessageContent(message)
                     } else {
                         val segments = TextFormatter.formatText(message.content)
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = enterTransition
-                        ) {
-                            Column {
-                                segments.forEach { segment ->
-                                    if (segment.isCodeBlock) {
-                                        CodeBlock(
-                                            code = segment.text,
-                                            language = segment.language,
-                                            modifier = Modifier
-                                                .padding(vertical = 8.dp)
-                                                .fillMaxWidth()
-                                        )
-                                    } else {
-                                        TypewriterText(
-                                            text = segment.text,
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontFamily = OpenSansFont,
-                                                lineHeight = 24.sp,
-                                                letterSpacing = 0.2.sp,
-                                                color = Color.Black
-                                            ),
-                                            modifier = Modifier.animateContentSize(),
-                                            shouldAnimate = shouldAnimate
-                                        )
-                                    }
+                        Column {
+                            segments.forEach { segment ->
+                                if (segment.isCodeBlock) {
+                                    CodeBlock(
+                                        code = segment.text,
+                                        language = segment.language,
+                                        modifier = Modifier
+                                            .padding(vertical = 8.dp)
+                                            .fillMaxWidth()
+                                    )
+                                } else {
+                                    TypewriterText(
+                                        text = segment.text,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontFamily = OpenSansFont,
+                                            lineHeight = 24.sp,
+                                            letterSpacing = 0.2.sp,
+                                            color = Color.Black
+                                        ),
+                                        shouldAnimate = false
+                                    )
                                 }
                             }
                         }

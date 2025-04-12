@@ -311,7 +311,7 @@ class SystemQueries {
                         // Try one more time with a simpler model configuration
                         try {
                             val simpleResponse = GenerativeModel(
-                                modelName = "gemini-1.5-flash",
+                                modelName = "gemini-2.0-flash",
                                 apiKey = BuildConfig.GEMINI_API_KEY
                             ).generateContent(query).text
                             
